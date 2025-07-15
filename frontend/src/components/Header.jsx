@@ -5,7 +5,7 @@ import './Header.css';
 export default function Header() {
   return (
     <header className="app-header">
-      <div className="app-title">Journée des Proches</div>
+      <div className="app-title">Journée des Proches SNCF</div>
       <Navbar />
     </header>
   );
