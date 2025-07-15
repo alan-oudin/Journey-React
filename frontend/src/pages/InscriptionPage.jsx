@@ -53,7 +53,12 @@ export default function InscriptionPage() {
       setForm({ codePersonnel: '', nom: '', prenom: '', email: '', nombreProches: '', heureArrivee: '' });
     } catch (e) {
       setAlertType('error');
-      setAlertMessage(e.message);
+      const msg = (e.message || '').toLowerCase();
+      if (msg.includes('existe') || msg.includes('400') || msg.includes('409')) {
+        setAlertMessage("Vous êtes déjà inscrit (si erreur veuillez contacter l'administrateur de l'application)");
+      } else {
+        setAlertMessage(e.message);
+      }
     } finally {
       setLoading(false);
     }

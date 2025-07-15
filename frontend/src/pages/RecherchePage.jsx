@@ -13,14 +13,16 @@ export default function RecherchePage() {
     setSearchTerm(value);
     setAgentTrouve(null);
     setError('');
-    if (!value) return;
+    // Vérifie le format : 7 chiffres suivis d'une lettre majuscule
+    const regexCP = /^\d{7}[A-Z]$/;
+    if (!value || !regexCP.test(value)) return;
     setLoading(true);
     try {
       const agent = await apiGet('search', { q: value });
       setAgentTrouve(agent);
     } catch (e) {
       setAgentTrouve(null);
-      setError("Aucun agent trouvé ou erreur : " + e.message);
+      setError("L'agent n'est pas inscrit");
     } finally {
       setLoading(false);
     }
