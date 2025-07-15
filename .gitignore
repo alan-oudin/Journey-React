@@ -7,20 +7,19 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+# Node modules (frontend)
+frontend/node_modules/
+
+# Build React
+frontend/build/
+
+# PHP vendor (backend)
+backend/vendor/
+
+# IDE & système
 .DS_Store
-dist
-dist-ssr
-coverage
-*.local
-
-/cypress/videos/
-/cypress/screenshots/
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+.idea/
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
@@ -29,9 +28,10 @@ coverage
 
 # Environment variables
 .env
-.env.development
-.env.production
-.env.local
-.env.*.local
+.env.*
 
+# Tests/coverage
+coverage/
+
+# Autres fichiers temporaires
 *.tsbuildinfo

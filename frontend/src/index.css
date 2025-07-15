@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+nav a {
+  text-decoration: none;
+  color: #3498db;
+  font-weight: 500;
+}
+nav a.active, nav a:hover {
+  color: #217dbb;
+  text-decoration: underline;
+}
