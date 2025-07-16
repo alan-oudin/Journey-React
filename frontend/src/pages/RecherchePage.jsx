@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import SearchBar from '../components/SearchBar';
-import AlertMessage from '../components/AlertMessage';
 import { apiGet } from '../api';
 
 export default function RecherchePage() {
@@ -13,7 +11,6 @@ export default function RecherchePage() {
     setSearchTerm(value);
     setAgentTrouve(null);
     setError('');
-    // Vérifie le format : 7 chiffres suivis d'une lettre majuscule
     const regexCP = /^\d{7}[A-Z]$/;
     if (!value || !regexCP.test(value)) return;
     setLoading(true);
@@ -29,26 +26,41 @@ export default function RecherchePage() {
   };
 
   return (
-    <div className="recherche-view">
+    <div>
       <h2>🔍 Recherche & Pointage - Jour J</h2>
-      <p className="subtitle">Interface de recherche rapide et gestion des présences</p>
+      <p>Interface de recherche rapide et gestion des présences</p>
 
       {error && (
-        <AlertMessage message={error} type="error" onClose={() => setError('')} />
+        <wcs-alert color="danger" show>
+          {error}
+          <wcs-button slot="action" shape="clear" onClick={() => setError('')}>Fermer</wcs-button>
+        </wcs-alert>
       )}
 
-      <SearchBar value={searchTerm} onChange={handleSearch} placeholder="Tapez le code personnel (CP) de l'agent..." />
+      <wcs-form-field label="Code personnel (CP)">
+        <wcs-input
+          value={searchTerm}
+          onInput={e => handleSearch(e.target.value)}
+          type="text"
+          placeholder="Tapez le code personnel (CP) de l'agent..."
+          icon="search"
+          required
+          disabled={loading}
+        ></wcs-input>
+      </wcs-form-field>
 
-      {loading && <div className="loading-indicator"><div className="spinner"></div><p>Recherche en cours...</p></div>}
+      {loading && <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>}
 
       {agentTrouve && (
         <div className="agent-found">
-          <h3>✅ Agent trouvé !</h3>
-          <div><strong>{agentTrouve.prenom} {agentTrouve.nom}</strong> (CP : {agentTrouve.code_personnel})</div>
-          <div>Nombre de proches : {agentTrouve.nombre_proches}</div>
-          <div>Statut : {agentTrouve.statut}</div>
-          <div>Heure d'arrivée : {agentTrouve.heure_arrivee}</div>
-          <div>Date inscription : {agentTrouve.date_inscription}</div>
+          <wcs-card>
+            <h3>✅ Agent trouvé !</h3>
+            <div><strong>{agentTrouve.prenom} {agentTrouve.nom}</strong> (CP : {agentTrouve.code_personnel})</div>
+            <div>Nombre de proches : {agentTrouve.nombre_proches}</div>
+            <div>Statut : {agentTrouve.statut}</div>
+            <div>Heure d'arrivée : {agentTrouve.heure_arrivee}</div>
+            <div>Date inscription : {agentTrouve.date_inscription}</div>
+          </wcs-card>
         </div>
       )}
     </div>

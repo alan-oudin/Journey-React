@@ -1,47 +1,26 @@
 import React from 'react';
-import './AgentCard.css';
 
 export default function AgentCard({ agent, showActions = true, onSupprimer }) {
-  const badgeClass = agent.creneauPrefere === 'matin' ? 'badge badge-morning' : 'badge badge-afternoon';
+  const badgeColor = agent.creneauPrefere === 'matin' ? 'primary' : 'secondary';
   const creneauText = agent.creneauPrefere === 'matin'
     ? '🌅 MATIN (9h-12h)'
     : '🌆 APRÈS-MIDI (14h-17h)';
 
   return (
-    <div className="agent-card">
-      <div className="agent-info">
-        <div className="info-item">
-          <span className="info-label">Code Personnel</span>
-          <span className="info-value highlight">{agent.codePersonnel}</span>
-        </div>
-        <div className="info-item">
-          <span className="info-label">Agent</span>
-          <span className="info-value highlight">{agent.prenom} {agent.nom}</span>
-        </div>
-        <div className="info-item">
-          <span className="info-label">Service</span>
-          <span className="info-value">{agent.service}</span>
-        </div>
-        <div className="info-item">
-          <span className="info-label">Proches</span>
-          <span className="info-value large">{agent.nombreProches}</span>
-        </div>
-        <div className="info-item">
-          <span className="info-label">Créneau</span>
-          <span className={badgeClass}>{creneauText}</span>
-        </div>
-        <div className="info-item">
-          <span className="info-label">Inscription</span>
-          <span className="info-value">{agent.dateInscription}</span>
-        </div>
-      </div>
+    <wcs-card style={{ marginBottom: 16, width: 320 }}>
+      <div style={{ marginBottom: 8 }}><strong>Code Personnel :</strong> <span style={{ color: 'var(--wcs-semantic-color-text-link-default)' }}>{agent.codePersonnel}</span></div>
+      <div><strong>Agent :</strong> {agent.prenom} {agent.nom}</div>
+      <div><strong>Service :</strong> {agent.service}</div>
+      <div><strong>Proches :</strong> {agent.nombreProches}</div>
+      <div><strong>Créneau :</strong> <wcs-badge color={badgeColor}>{creneauText}</wcs-badge></div>
+      <div><strong>Inscription :</strong> {agent.dateInscription}</div>
       {showActions && (
-        <div className="agent-actions">
-          <button className="btn btn-danger" onClick={() => onSupprimer(agent.codePersonnel)}>
+        <div style={{ marginTop: 12 }}>
+          <wcs-button color="danger" onClick={() => onSupprimer(agent.codePersonnel)}>
             🗑️ Supprimer
-          </button>
+          </wcs-button>
         </div>
       )}
-    </div>
+    </wcs-card>
   );
 }

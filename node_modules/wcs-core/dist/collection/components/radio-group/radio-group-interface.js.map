@@ -1,0 +1,1 @@
+{"version":3,"file":"radio-group-interface.js","sourceRoot":"","sources":["../../../src/components/radio-group/radio-group-interface.ts"],"names":[],"mappings":"","sourcesContent":["export interface RadioGroupChangeEventDetail {\n    value: any | any[] | undefined | null;\n}\n\nexport type RadioGroupMode = 'radio' | 'option' | 'horizontal';\n"]}

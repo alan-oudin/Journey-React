@@ -1,0 +1,1 @@
+{"version":3,"file":"mat-icon-interface.js","sourceRoot":"","sources":["../../../src/components/mat-icon/mat-icon-interface.tsx"],"names":[],"mappings":"","sourcesContent":["export type MaterialIconFamily = 'filled' | 'outlined' | 'twotone' | 'rounded' | 'sharp';\n\nexport type MaterialIconSize = 's' | 'm' | 'l' | 'xl';\n"]}

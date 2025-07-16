@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import StatCard from '../components/StatCard';
-import AlertMessage from '../components/AlertMessage';
 import AgentCard from '../components/AgentCard';
 import { apiGet } from '../api';
 
@@ -126,25 +125,26 @@ export default function GestionPage() {
   });
 
   return (
-    <div className="gestion-view">
+    <div>
       <h2>👥 Gestion des inscriptions</h2>
-      <p className="subtitle">Journée des Proches - Vue d'ensemble et administration</p>
+      <p>Journée des Proches - Vue d'ensemble et administration</p>
 
-      {loading && (
-        <div className="loading-indicator">
-          <div className="spinner"></div>
-          <p>Chargement des données...</p>
-        </div>
-      )}
+      {loading && <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>}
 
       {error && (
-        <AlertMessage message={error} type="error" onClose={() => setError('')} />
+        <wcs-alert color="danger" show>
+          {error}
+          <wcs-button slot="action" shape="clear" onClick={() => setError('')}>Fermer</wcs-button>
+        </wcs-alert>
       )}
       {success && (
-        <AlertMessage message={success} type="success" onClose={() => setSuccess('')} />
+        <wcs-alert color="success" show>
+          {success}
+          <wcs-button slot="action" shape="clear" onClick={() => setSuccess('')}>Fermer</wcs-button>
+        </wcs-alert>
       )}
 
-      <div className="stats-grid">
+      <div style={{display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24}}>
         <StatCard number={stats ? stats.total_agents : agents.length} label="Total agents" />
         <StatCard number={stats ? stats.agents_presents : 0} label="Présents" />
         <StatCard number={stats ? stats.agents_inscrits : 0} label="Inscrits" />
@@ -154,31 +154,33 @@ export default function GestionPage() {
 
       <div style={{margin: '24px 0'}}>
         <strong>Filtrer par statut :</strong>{' '}
-        {STATUTS.map(s => (
-          <button
-            key={s.value}
-            className={filtreStatut === s.value ? 'btn btn-primary' : 'btn btn-secondary'}
-            style={{marginRight: 8, marginBottom: 8}}
-            onClick={() => setFiltreStatut(s.value)}
-            disabled={loading}
-          >
-            {s.label}
-          </button>
-        ))}
+        <wcs-button-group>
+          {STATUTS.map(s => (
+            <wcs-button
+              key={s.value}
+              color={filtreStatut === s.value ? 'primary' : 'secondary'}
+              onClick={() => setFiltreStatut(s.value)}
+              disabled={loading}
+              style={{marginRight: 8, marginBottom: 8}}
+            >
+              {s.label}
+            </wcs-button>
+          ))}
+        </wcs-button-group>
       </div>
 
-      <button className="btn btn-primary" style={{marginTop: 16, marginBottom: 16}} onClick={handleExportCSV} disabled={loading || agents.length === 0}>
+      <wcs-button color="primary" style={{marginTop: 16, marginBottom: 16}} onClick={handleExportCSV} disabled={loading || agents.length === 0}>
         📊 Exporter CSV
-      </button>
+      </wcs-button>
 
       <h3 style={{marginTop: '2rem'}}>Disponibilité des créneaux</h3>
       {loadingCreneaux ? (
-        <div>Chargement des créneaux...</div>
+        <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>
       ) : (
         <div style={{display: 'flex', gap: 32, flexWrap: 'wrap'}}>
-          <div>
+          <wcs-card style={{minWidth: 320}}>
             <h4>🌅 Matin (9h00 - 11h40)</h4>
-            <table style={{borderCollapse: 'collapse', minWidth: 320}}>
+            <table style={{borderCollapse: 'collapse', width: '100%'}}>
               <thead>
                 <tr>
                   <th>Heure</th>
@@ -205,10 +207,10 @@ export default function GestionPage() {
                 })}
               </tbody>
             </table>
-          </div>
-          <div>
+          </wcs-card>
+          <wcs-card style={{minWidth: 320}}>
             <h4>🌆 Après-midi (13h00 - 15h40)</h4>
-            <table style={{borderCollapse: 'collapse', minWidth: 320}}>
+            <table style={{borderCollapse: 'collapse', width: '100%'}}>
               <thead>
                 <tr>
                   <th>Heure</th>
@@ -235,7 +237,7 @@ export default function GestionPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </wcs-card>
         </div>
       )}
 
@@ -243,7 +245,7 @@ export default function GestionPage() {
       <div>
         {agentsFiltres.length === 0 && !loading && <p>Aucun agent pour ce filtre.</p>}
         {agentsFiltres.map(agent => (
-          <div key={agent.code_personnel} style={{ marginBottom: 24 }}>
+          <wcs-card key={agent.code_personnel} style={{ marginBottom: 24 }}>
             <AgentCard
               agent={{
                 codePersonnel: agent.code_personnel,
@@ -259,17 +261,17 @@ export default function GestionPage() {
             />
             <div style={{ marginTop: 8 }}>
               <label>Statut : </label>
-              <select
+              <wcs-select
                 value={agent.statut}
-                onChange={e => handleChangeStatut(agent.code_personnel, e.target.value)}
+                onInput={e => handleChangeStatut(agent.code_personnel, e.target.value)}
                 disabled={loading}
               >
                 {STATUTS.filter(s => s.value !== 'tous').map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                  <wcs-select-option key={s.value} value={s.value}>{s.label}</wcs-select-option>
                 ))}
-              </select>
+              </wcs-select>
             </div>
-          </div>
+          </wcs-card>
         ))}
       </div>
     </div>

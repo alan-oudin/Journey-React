@@ -1,0 +1,2 @@
+import{r,h as e,H as s}from"./p-32e583ea.js";const c=":host{--wcs-divider-color:var(--wcs-semantic-color-border-secondary);--wcs-divider-height:var(--wcs-semantic-border-width-default);display:block;border-bottom:solid var(--wcs-divider-height) var(--wcs-divider-color)}";const o=c;const d=class{constructor(e){r(this,e)}render(){return e(s,{key:"cf4452e90a52e1bb419fec0db2d9c0838ad7b134"})}};d.style=o;export{d as wcs_divider};
+//# sourceMappingURL=p-c7812760.entry.js.map

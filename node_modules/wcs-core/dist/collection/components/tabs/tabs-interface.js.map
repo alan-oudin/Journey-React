@@ -1,0 +1,1 @@
+{"version":3,"file":"tabs-interface.js","sourceRoot":"","sources":["../../../src/components/tabs/tabs-interface.ts"],"names":[],"mappings":"","sourcesContent":["export type WcsTabsAlignment = 'start' | 'center' | 'end';\n\nexport interface WcsTabChangeEvent {\n    tabName: string;\n    tabIndex: number;\n    selectedKey: any;\n}\n"]}

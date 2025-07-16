@@ -1,0 +1,2 @@
+function t(t){if(typeof t!=="object"||t===null||t===undefined)return false;return"getLabel"in t}function n(t,n){if(!t.shadowRoot){return""}const e=typeof n==="string"?`slot[name="${n}"]`:"slot:not([name])";const r=t.shadowRoot.querySelector(e);if(!r){return""}const o=r.assignedNodes({flatten:true});if(!o.length){return""}return o.map((t=>t.textContent||"")).filter((t=>t.trim()!=="")).join(" ").replace(/\s+/g," ").trim()}export{n as g,t as i};
+//# sourceMappingURL=p-a7468a3a.js.map

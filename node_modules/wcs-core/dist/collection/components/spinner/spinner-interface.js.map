@@ -1,0 +1,1 @@
+{"version":3,"file":"spinner-interface.js","sourceRoot":"","sources":["../../../src/components/spinner/spinner-interface.ts"],"names":[],"mappings":"","sourcesContent":["export type WcsSpinnerMode = 'border' | 'growing';\n"]}

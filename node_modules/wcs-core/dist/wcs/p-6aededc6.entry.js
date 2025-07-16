@@ -1,0 +1,2 @@
+import{r as c,h as e,H as a}from"./p-32e583ea.js";const s=":host{--wcs-card-footer-gap:var(--wcs-semantic-spacing-base);display:flex;flex-direction:row;align-items:center;gap:var(--wcs-card-footer-gap)}";const r=s;const o=class{constructor(e){c(this,e)}render(){return e(a,{key:"8b600e63a3178bbf9c3d577053b927ff6ea9a48f"},e("slot",{key:"1ce0728f66cd296c44dcc4d85c9e9d9dcbae853a"}))}};o.style=r;export{o as wcs_card_footer};
+//# sourceMappingURL=p-6aededc6.entry.js.map

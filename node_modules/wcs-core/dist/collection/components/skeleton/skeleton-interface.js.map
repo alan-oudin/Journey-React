@@ -1,0 +1,1 @@
+{"version":3,"file":"skeleton-interface.js","sourceRoot":"","sources":["../../../src/components/skeleton/skeleton-interface.ts"],"names":[],"mappings":"","sourcesContent":["export type WcsSkeletonAnimation = 'none' | 'glide' | 'pulse';\n"]}
