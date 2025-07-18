@@ -190,7 +190,7 @@ h2 {
   min-height: 100vh;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1200px) {
   .app-layout {
     grid-template-areas:
       "header"
@@ -198,5 +198,33 @@ h2 {
       "content";
     grid-template-columns: 1fr;
     grid-template-rows: auto auto 1fr;
+  }
+}
+
+.header-area {
+  grid-area: header;
+}
+.nav-area {
+  grid-area: nav;
+}
+.content-area {
+  grid-area: content;
+}
+
+@media (max-width: 1700px) {
+  .form-columns {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+  }
+  .form-separator {
+    display: block;
+    width: 80%;
+    height: 1px;
+    background: var(--wcs-semantic-color-border-default, #ddd);
+    margin: 24px auto;
+    min-height: 0;
+    align-self: center;
   }
 }

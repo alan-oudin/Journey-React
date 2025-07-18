@@ -10,15 +10,6 @@ import { defineCustomElements } from 'wcs-react';
 import './index.css';
 
 
-const headerStyle = { 
-  gridArea: 'header' 
-};
-
-const navStyle = { 
-  gridArea: 'nav', 
-  height: 'calc(100vh - 8 * var(--wcs-semantic-size-base))' 
-};
-
 
 defineCustomElements();
 
@@ -26,9 +17,9 @@ export default function App() {
   return (
     <Router>
       <div className="app-layout">
-        <div style={headerStyle}><Header /></div>
-        <div style={navStyle}><Navbar /></div>
-        <main className="main-content">
+        <div className="header-area"><Header /></div>
+        <div className="nav-area"><Navbar /></div>
+        <main className="main-content content-area">
           <Routes>
             <Route path="/" element={<InscriptionPage />} />
             <Route path="/gestion" element={<GestionPage />} />
