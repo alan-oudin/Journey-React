@@ -1,0 +1,1 @@
+{"version":3,"file":"tooltip-interface.js","sourceRoot":"","sources":["../../../src/components/tooltip/tooltip-interface.ts"],"names":[],"mappings":"","sourcesContent":["export type WcsTooltipPosition = 'top' | 'bottom' | 'right' | 'left';\nexport type WcsTooltipAppendTo = Element | 'parent' | ((ref: Element) => Element);"]}

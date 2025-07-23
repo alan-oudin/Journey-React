@@ -1,15 +1,423 @@
-body {
-  margin: 0;
-  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
-  background: #f8f9fa;
-  color: #2c3e50;
+@import "wcs-core/design-tokens/dist/sncf-voyageurs.css";
+@import "wcs-core/dist/wcs/wcs.css";
+
+:root {
+  --wcs-font-sans-serif: Avenir, 'Segoe UI', 'Roboto', 'Arial', sans-serif;
 }
-nav a {
+
+/* Global box-sizing pour éviter les débordements */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/** base */
+body {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+html {
+  background-color: var(--wcs-semantic-color-background-surface-body);
+  color: var(--wcs-semantic-color-text-primary);
+}
+
+html, body {
+  height: 100%;
+}
+
+/** fonts */
+html, body, h1, h2, h3, h4, h5 {
+  font-family: var(--wcs-font-sans-serif);
+  color: var(--wcs-semantic-color-text-primary);
+}
+
+h2 {
+  margin-bottom: var(--wcs-semantic-spacing-base);
+  font-weight: var(--wcs-semantic-font-weight-medium);
+  line-height: var(--wcs-semantic-font-line-height-medium);
+}
+
+/** liens */
+.link {
+  color: var(--wcs-semantic-color-text-link-default);
+  font-weight: var(--wcs-semantic-font-weight-medium);
   text-decoration: none;
-  color: #3498db;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.link:hover {
+  color: var(--wcs-semantic-color-text-link-hover);
+}
+.link:visited {
+  color: var(--wcs-semantic-color-text-link-visited);
+}
+.link[disabled] {
+  color: var(--wcs-semantic-color-text-disabled);
+}
+
+.main-content {
+  width: 85%;
+  margin: 0 auto;
+  padding-inline: 50px;
+  height: calc(100vh - 10 * var(--wcs-semantic-size-base));
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+/* Adaptations mobiles pour main-content */
+@media (max-width: 768px) {
+  .main-content {
+    width: 95%;
+    margin: 0 auto;
+    padding-inline: 20px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .main-content {
+    width: 100%;
+    margin: 0 auto;
+    padding-inline: 16px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    width: 100%;
+    margin: 0 auto;
+    padding-inline: 8px;
+    box-sizing: border-box;
+  }
+
+  /* Ajustements spécifiques pour GestionPage */
+  .gestion-container {
+    padding: 20px 8px !important;
+    box-sizing: border-box;
+  }
+
+  /* Adaptations pour les boutons mobiles */
+  wcs-button-group {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  wcs-button {
+    min-width: 0 !important;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* Tables responsive */
+  table {
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    padding: 4px 8px !important;
+  }
+
+  /* Fix pour les boutons qui dépassent */
+  .header-area, .nav-area, .content-area {
+    overflow-x: hidden;
+  }
+
+  body, html {
+    overflow-x: hidden;
+  }
+}
+
+/* Fix spécifique pour le bouton connexion dans le header slot */
+@media (max-width: 768px) {
+  wcs-header [slot="actions"] {
+    margin-left: auto;
+    max-width: 120px;
+    overflow: hidden;
+  }
+
+  wcs-header [slot="actions"] wcs-button {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  wcs-header [slot="actions"] {
+    max-width: 100px;
+  }
+
+  wcs-header [slot="actions"] wcs-button {
+    font-size: 0.75rem;
+    padding: 0 8px !important;
+  }
+
+  wcs-header [slot="actions"] wcs-icon {
+    display: none;
+  }
+}
+
+
+/* Déclaration des polices Avenir (inchangé) */
+@font-face {
+  font-family: Avenir;
+  src: url("../public/fonts/avenir-lighter.woff");
+  font-weight: 100;
+}
+@font-face {
+  font-family: Avenir;
+  src: url("../public/fonts/avenir-book.woff");
+  font-weight: 300;
+}
+@font-face {
+  font-family: Avenir;
+  src: url("../public/fonts/avenir-roman.woff");
+  font-weight: 400;
+}
+@font-face {
+  font-family: Avenir;
+  src: url("../public/fonts/avenir-medium.woff");
   font-weight: 500;
 }
-nav a.active, nav a:hover {
-  color: #217dbb;
-  text-decoration: underline;
+@font-face {
+  font-family: Avenir;
+  src: url("../public/fonts/avenir-heavy.woff");
+  font-weight: 800;
+}
+@font-face {
+  font-family: Avenir;
+  src: url("../public/fonts/avenir-black.woff");
+  font-weight: 900;
+}
+
+/* Material Icons (inchangé) */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/materialicons/v139/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Material Icons Outlined';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/materialiconsoutlined/v108/gok-H7zzDkdnRel8-DQ6KAXJ69wP1tGnf4ZGhUce.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Material Icons Two Tone';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/materialiconstwotone/v111/hESh6WRmNCxEqUmNyh3JDeGxjVVyMg4tHGctNCu0.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Material Icons Round';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/materialiconsround/v107/LDItaoyNOAY6Uewc665JcIzCKsKc_M9flwmP.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Material Icons Sharp';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/materialiconssharp/v108/oPWQ_lt5nv4pWNJpghLP75WiFR4kLh3kvmvR.woff2) format('woff2');
+}
+
+.form-columns {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Adaptations mobiles plus spécifiques */
+@media (max-width: 768px) {
+  .form-columns {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-columns {
+    gap: 8px;
+    padding: 0;
+  }
+}
+
+.form-columns .form-left,
+.form-columns .form-right {
+  flex: 1;
+  min-width: 320px;
+  max-width: 40%;
+}
+
+.form-columns .form-right {
+  min-width: 520px;
+  max-width: 60%;
+  position: relative;
+}
+
+/* Adaptations mobiles pour les colonnes */
+@media (max-width: 768px) {
+  .form-columns .form-left,
+  .form-columns .form-right {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-columns .form-left,
+  .form-columns .form-right {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .form-columns .form-right {
+    min-width: 320px;
+    max-width: 100%;
+  }
+}
+
+.form-separator {
+  width: 1px;
+  background: var(--wcs-semantic-color-border-default, #ddd);
+  min-height: 300px;
+  align-self: stretch;
+  margin: 0 8px;
+}
+
+.creneaux-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .creneaux-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .creneaux-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.app-layout {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "nav content";
+  grid-template-columns: clamp(80px, 10vw, 120px) 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 1200px) {
+  .app-layout {
+    grid-template-areas:
+      "header"
+      "nav"
+      "content";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+}
+
+.header-area {
+  grid-area: header;
+}
+.nav-area {
+  grid-area: nav;
+}
+.content-area {
+  grid-area: content;
+}
+
+/* Sépateur responsive */
+@media (max-width: 768px) {
+  .form-separator {
+    display: block;
+    width: 90%;
+    height: 1px;
+    background: var(--wcs-semantic-color-border-default, #ddd);
+    margin: 16px auto;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-separator {
+    width: 100%;
+    margin: 8px auto;
+  }
+}
+
+@media (max-width: 1700px) {
+  .form-columns {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+  }
+  .form-separator {
+    display: block;
+    width: 80%;
+    height: 1px;
+    background: var(--wcs-semantic-color-border-default, #ddd);
+    margin: 24px auto;
+    min-height: 0;
+    align-self: center;
+  }
+}
+
+/* Augmentation de la taille des textes de la nav bar x1.25 */
+wcs-nav-item {
+  --wcs-nav-item-font-size-desktop: calc(var(--wcs-semantic-font-size-label-3) * 1.25);
+  --wcs-nav-item-font-size-mobile: calc(calc(var(--wcs-semantic-font-size-body-1) / 2) * 1.25);
+}
+
+/* Augmentation de la taille du titre du header x1.25 */
+wcs-header h1[slot="title"] {
+  font-size: calc(var(--wcs-semantic-font-size-heading-3) * 0.75) !important;
+}
+
+/* Ajustement de la hauteur du header pour s'adapter au logo agrandi */
+wcs-header {
+  --wcs-header-height: calc(10 * var(--wcs-semantic-size-base));
+  --wcs-header-logo-height: calc(10 * var(--wcs-semantic-size-base));
+  --wcs-header-gap: var(--wcs-semantic-spacing-large);
+}
+
+/* Augmentation de la taille du logo x1.25 avec centrage vertical */
+wcs-header img[slot="logo"] {
+  height: var(--wcs-header-logo-height);
+  width: auto;
+  max-height: var(--wcs-header-logo-height);
+  align-self: center;
+  margin: 0;
+  object-fit: contain;
+}
+
+/* Espacement entre les form-fields */
+wcs-form-field {
+  margin-bottom: var(--wcs-semantic-spacing-large);
 }

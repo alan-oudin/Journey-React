@@ -160,7 +160,8 @@ try {
                 // Récupérer tous les agents avec leur statut et heure de validation
                 $stmt = $pdo->query("
                     SELECT id, code_personnel, nom, prenom, nombre_proches, 
-                           statut, heure_validation, heure_arrivee, date_inscription, updated_at 
+                           statut, heure_validation, heure_arrivee, note, restauration_sur_place, 
+                           date_inscription, updated_at 
                     FROM agents_inscriptions 
                     ORDER BY nom, prenom
                 ");
@@ -223,11 +224,14 @@ try {
                     }
                 }
 
-                // Insérer l'agent (sans service)
+                // Récupérer la valeur de restauration sur place (par défaut 0)
+                $restaurationSurPlace = isset($input['restauration_sur_place']) ? (int)$input['restauration_sur_place'] : 0;
+
+                // Insérer l'agent (avec restauration sur place)
                 $stmt = $pdo->prepare("
                     INSERT INTO agents_inscriptions 
-                    (code_personnel, nom, prenom, nombre_proches, statut, heure_arrivee) 
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    (code_personnel, nom, prenom, nombre_proches, statut, heure_arrivee, restauration_sur_place) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 ");
 
                 $stmt->execute([
@@ -236,7 +240,8 @@ try {
                     ucfirst(strtolower(trim($input['prenom']))),
                     (int)$input['nombre_proches'],
                     $statut,
-                    $input['heure_arrivee']
+                    $input['heure_arrivee'],
+                    $restaurationSurPlace
                 ]);
 
                 $id = $pdo->lastInsertId();
@@ -320,6 +325,11 @@ try {
                     $params[] = (int)$input['nombre_proches'];
                 }
 
+                if (isset($input['note'])) {
+                    $updates[] = "note = ?";
+                    $params[] = $input['note'];
+                }
+
                 if (empty($updates)) {
                     throw new Exception('Aucune modification spécifiée');
                 }
@@ -389,7 +399,8 @@ try {
 
                 $stmt = $pdo->prepare("
                     SELECT id, code_personnel, nom, prenom, nombre_proches, 
-                           statut, heure_validation, heure_arrivee, date_inscription, updated_at
+                           statut, heure_validation, heure_arrivee, note, restauration_sur_place, 
+                           date_inscription, updated_at
                     FROM agents_inscriptions 
                     WHERE code_personnel = ?
                 ");
@@ -497,17 +508,23 @@ try {
                             (SUM(CASE WHEN statut = 'present' THEN 1 ELSE 0 END) * 100.0) / 
                             NULLIF(SUM(CASE WHEN statut IN ('inscrit', 'present', 'absent') THEN 1 ELSE 0 END), 0), 
                             2
-                        ) as taux_presence
+                        ) as taux_presence,
+                        -- Statistiques restauration
+                        SUM(CASE WHEN restauration_sur_place = 1 THEN 1 ELSE 0 END) as agents_restauration,
+                        FLOOR(
+                            (SUM(CASE WHEN restauration_sur_place = 1 THEN 1 ELSE 0 END) * 100.0) / 
+                            NULLIF(COUNT(*), 0)
+                        ) as taux_restauration
                     FROM agents_inscriptions
                 ");
                 $stats = $stmt->fetch();
 
-                // Convertir en entiers
+                // Convertir en entiers et floats
                 foreach ($stats as $key => $value) {
-                    if ($key !== 'taux_presence') {
-                        $stats[$key] = (int)$value;
-                    } else {
+                    if (in_array($key, ['taux_presence', 'taux_restauration'])) {
                         $stats[$key] = (float)$value;
+                    } else {
+                        $stats[$key] = (int)$value;
                     }
                 }
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import AlertMessage from '../components/AlertMessage';
 import { useNavigate } from 'react-router-dom';
 import { apiPost } from '../api';
 
@@ -18,7 +17,6 @@ export default function LoginPage() {
       const res = await apiPost('login', { username, password });
       if (res.success && res.token) {
         localStorage.setItem('token', res.token);
-        // Redirection après connexion
         navigate('/gestion');
       } else {
         setError(res.message || 'Identifiants incorrects');
@@ -31,53 +29,47 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-view">
+    <div>
       <h2>🔒 Connexion</h2>
-      <p className="subtitle">Veuillez vous connecter pour accéder à l'administration</p>
+      <p>Veuillez vous connecter pour accéder à l'administration</p>
 
       {error && (
-        <AlertMessage message={error} type="error" onClose={() => setError('')} />
+        <wcs-alert color="danger" show>
+          {error}
+          <wcs-button slot="action" shape="clear" onClick={() => setError('')}>Fermer</wcs-button>
+        </wcs-alert>
       )}
 
-      <div className="login-container">
-        <form className="login-form" onSubmit={handleLogin}>
-          <div className="form-group">
-            <label htmlFor="username">Nom d'utilisateur</label>
-            <input
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              type="text"
-              id="username"
-              placeholder="Entrez votre nom d'utilisateur"
-              autoComplete="username"
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Mot de passe</label>
-            <input
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              type="password"
-              id="password"
-              placeholder="Entrez votre mot de passe"
-              autoComplete="current-password"
-              required
-              disabled={loading}
-            />
-          </div>
-          <button
-            className="btn btn-primary login-btn"
+      <form onSubmit={handleLogin}>
+        <wcs-form-field label="Nom d'utilisateur">
+          <wcs-input
+            value={username}
+            onInput={e => setUsername(e.target.value)}
+            type="text"
+            name="username"
+            placeholder="Entrez votre nom d'utilisateur"
+            autoComplete="username"
+            required
             disabled={loading}
-            type="submit"
-          >
-            {loading ? <span className="spinner-small"></span> : 'Se connecter'}
-          </button>
-        </form>
-      </div>
-
-      <div className="login-footer">
+          ></wcs-input>
+        </wcs-form-field>
+        <wcs-form-field label="Mot de passe">
+          <wcs-input
+            value={password}
+            onInput={e => setPassword(e.target.value)}
+            type="password"
+            name="password"
+            placeholder="Entrez votre mot de passe"
+            autoComplete="current-password"
+            required
+            disabled={loading}
+          ></wcs-input>
+        </wcs-form-field>
+        <wcs-button color="primary" type="submit" shape="block" disabled={loading} style={{marginTop: 16}}>
+          {loading ? <wcs-spinner size="small"></wcs-spinner> : 'Se connecter'}
+        </wcs-button>
+      </form>
+      <div style={{marginTop: 16}}>
         <p>Accès réservé au personnel autorisé</p>
       </div>
     </div>

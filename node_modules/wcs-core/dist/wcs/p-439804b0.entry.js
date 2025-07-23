@@ -1,0 +1,2 @@
+import{r as a,h as e,H as c}from"./p-32e583ea.js";const s=":host{text-align:left}";const t=s;const o=class{constructor(e){a(this,e)}render(){return e(c,{key:"d78fe9badfb9ba04ce4b29a518dcc724a2bbf15c",slot:"header"},e("slot",{key:"90b5fa5315499ac17957b8f366696ff05ad7a3c0"}))}};o.style=t;export{o as wcs_accordion_header};
+//# sourceMappingURL=p-439804b0.entry.js.map

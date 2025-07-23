@@ -1,0 +1,2 @@
+import{r as e,h as c,H as t}from"./p-32e583ea.js";const s=class{constructor(c){e(this,c)}render(){return c(t,{key:"251b9ccc1b13766b287f356dfc51d6a953ad0a5e",slot:"content"},c("slot",{key:"ee7d55bf47c0f468829e99a26a0fe340fbafcc9f"}))}};export{s as wcs_field_content};
+//# sourceMappingURL=p-e26c19e5.entry.js.map

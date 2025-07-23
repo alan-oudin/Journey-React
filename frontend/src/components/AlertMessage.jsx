@@ -1,12 +1,10 @@
 import React from 'react';
-import './AlertMessage.css';
 
 export default function AlertMessage({ message, type = 'success', onClose }) {
-  const alertClass = `alert alert-${type}`;
   return (
-    <div className={alertClass}>
+    <wcs-alert color={type} show>
       {message}
-      <button className="alert-close" onClick={onClose}>&times;</button>
-    </div>
+      <wcs-button slot="action" shape="clear" onClick={onClose}>Fermer</wcs-button>
+    </wcs-alert>
   );
 }

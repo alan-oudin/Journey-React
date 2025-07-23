@@ -1,0 +1,1 @@
+{"version":3,"file":"com-nav-interface.js","sourceRoot":"","sources":["../../../src/components/com-nav/com-nav-interface.ts"],"names":[],"mappings":"","sourcesContent":["export interface MenuOpenedEventDetail {\n    menuElement: HTMLWcsComNavSubmenuElement;\n}\nexport interface CategoryOpenedEventDetail {\n    categoryElement: HTMLWcsComNavCategoryElement;\n}\n"]}

@@ -1,0 +1,1 @@
+{"version":3,"file":"checkbox-interface.js","sourceRoot":"","sources":["../../../src/components/checkbox/checkbox-interface.ts"],"names":[],"mappings":"","sourcesContent":["export interface CheckboxChangeEventDetail {\n    checked: boolean;\n}\n\nexport type CheckboxLabelAlignment = 'top' | 'center' | 'bottom';\n"]}

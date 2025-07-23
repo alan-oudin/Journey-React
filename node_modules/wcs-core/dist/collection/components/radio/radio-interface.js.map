@@ -1,0 +1,1 @@
+{"version":3,"file":"radio-interface.js","sourceRoot":"","sources":["../../../src/components/radio/radio-interface.ts"],"names":[],"mappings":"","sourcesContent":["export interface RadioValue {\n    value: any | any[] | undefined | null;\n    label: string;\n}\n\nexport interface RadioChosedEvent extends RadioValue {\n    source: HTMLWcsRadioElement;\n}\n"]}

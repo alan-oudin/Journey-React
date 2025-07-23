@@ -60,6 +60,7 @@ CREATE TABLE `agents_inscriptions` (
   `statut` enum('inscrit','present','absent','annule') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'inscrit',
   `heure_validation` timestamp NULL DEFAULT NULL COMMENT 'Heure de validation de présence (pointage automatique)',
   `heure_arrivee` time NOT NULL COMMENT 'Heure d''arrivée prévue - créneaux de 20 minutes',
+  `note` text COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Notes concernant l''agent (pointage jour J, remarques particulières)',
   `date_inscription` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Date et heure d''inscription',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Date de dernière modification'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Table des inscriptions pour la journée des proches';

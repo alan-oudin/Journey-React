@@ -5,20 +5,29 @@ import InscriptionPage from './pages/InscriptionPage';
 import LoginPage from './pages/LoginPage';
 import RecherchePage from './pages/RecherchePage';
 import Header from './components/Header';
-import './App.css';
+import Navbar from './components/Navbar';
+import { defineCustomElements } from 'wcs-react';
+import './index.css';
+
+
+
+defineCustomElements();
 
 export default function App() {
   return (
     <Router>
-      <Header />
-      <div className="app-content">
-        <Routes>
-          <Route path="/" element={<InscriptionPage />} />
-          <Route path="/gestion" element={<GestionPage />} />
-          <Route path="/recherche" element={<RecherchePage />} />
-          <Route path="/login" element={<LoginPage />} />
-        </Routes>
+      <div className="app-layout">
+        <div className="header-area"><Header /></div>
+        <div className="nav-area"><Navbar /></div>
+        <main className="main-content content-area">
+          <Routes>
+            <Route path="/" element={<InscriptionPage />} />
+            <Route path="/gestion" element={<GestionPage />} />
+            <Route path="/recherche" element={<RecherchePage />} />
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </main>
       </div>
     </Router>
   );
-} 
+}

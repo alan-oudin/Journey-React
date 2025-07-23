@@ -1,0 +1,1 @@
+{"version":3,"file":"switch-interface.js","sourceRoot":"","sources":["../../../src/components/switch/switch-interface.ts"],"names":[],"mappings":"","sourcesContent":["export interface SwitchChangeEventDetail {\n    checked: boolean;\n}\n\nexport type SwitchLabelAlignment = 'top' | 'center' | 'bottom';\n\n"]}

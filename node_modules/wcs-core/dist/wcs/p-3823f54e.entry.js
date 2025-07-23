@@ -1,0 +1,2 @@
+import{r as e,h as s,H as t}from"./p-32e583ea.js";const d=class{constructor(s){e(this,s);this.columnId=undefined;this.rowId=undefined}render(){return s(t,{key:"3353e4de7a3eeb4d903a63d5adf257ed3427beb8",slot:this.columnId+"-"+this.rowId},s("slot",{key:"cc3297d327379b74a385c4909964b8371da68a97"}))}};export{d as wcs_grid_custom_cell};
+//# sourceMappingURL=p-3823f54e.entry.js.map

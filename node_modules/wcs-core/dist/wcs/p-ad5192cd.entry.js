@@ -1,0 +1,2 @@
+import{r as s,c as e,h as t,H as a}from"./p-32e583ea.js";const o=":host{display:block}:host([hidden]){display:none}";const d=o;const n=class{constructor(t){s(this,t);this.tabLoaded=e(this,"tabLoaded",7);this.header=undefined;this.itemKey=undefined}componentDidLoad(){this.tabLoaded.emit()}render(){return t(a,{key:"794409fa3f716ebb644a961702f98908d396c9e2",slot:"wcs-tab",role:"tabpanel"},t("slot",{key:"9d98f7701d339eb5a1c3a9680595d7e5e88beba6"}))}};n.style=d;export{n as wcs_tab};
+//# sourceMappingURL=p-ad5192cd.entry.js.map
