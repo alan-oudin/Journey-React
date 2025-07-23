@@ -160,7 +160,7 @@ try {
                 // Récupérer tous les agents avec leur statut et heure de validation
                 $stmt = $pdo->query("
                     SELECT id, code_personnel, nom, prenom, nombre_proches, 
-                           statut, heure_validation, heure_arrivee, date_inscription, updated_at 
+                           statut, heure_validation, heure_arrivee, note, date_inscription, updated_at 
                     FROM agents_inscriptions 
                     ORDER BY nom, prenom
                 ");
@@ -320,6 +320,11 @@ try {
                     $params[] = (int)$input['nombre_proches'];
                 }
 
+                if (isset($input['note'])) {
+                    $updates[] = "note = ?";
+                    $params[] = $input['note'];
+                }
+
                 if (empty($updates)) {
                     throw new Exception('Aucune modification spécifiée');
                 }
@@ -389,7 +394,7 @@ try {
 
                 $stmt = $pdo->prepare("
                     SELECT id, code_personnel, nom, prenom, nombre_proches, 
-                           statut, heure_validation, heure_arrivee, date_inscription, updated_at
+                           statut, heure_validation, heure_arrivee, note, date_inscription, updated_at
                     FROM agents_inscriptions 
                     WHERE code_personnel = ?
                 ");

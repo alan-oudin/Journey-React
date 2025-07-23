@@ -1,8 +1,13 @@
 @import "wcs-core/design-tokens/dist/sncf-voyageurs.css";
-/* @import "wcs-core/dist/wcs/wcs.css"; */
+@import "wcs-core/dist/wcs/wcs.css";
 
 :root {
   --wcs-font-sans-serif: Avenir, 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+}
+
+/* Global box-sizing pour éviter les débordements */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 /** base */
@@ -10,6 +15,8 @@ body {
   height: 100vh;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 html {
@@ -53,11 +60,109 @@ h2 {
 }
 
 .main-content {
-  width: 70%;
+  width: 85%;
   margin: 0 auto;
   padding-inline: 50px;
   height: calc(100vh - 8 * var(--wcs-semantic-size-base));
   overflow-x: auto;
+  box-sizing: border-box;
+}
+
+/* Adaptations mobiles pour main-content */
+@media (max-width: 768px) {
+  .main-content {
+    width: 95%;
+    margin: 0 auto;
+    padding-inline: 20px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .main-content {
+    width: 100%;
+    margin: 0 auto;
+    padding-inline: 16px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    width: 100%;
+    margin: 0 auto;
+    padding-inline: 8px;
+    box-sizing: border-box;
+  }
+  
+  /* Ajustements spécifiques pour GestionPage */
+  .gestion-container {
+    padding: 20px 8px !important;
+    box-sizing: border-box;
+  }
+  
+  /* Adaptations pour les boutons mobiles */
+  wcs-button-group {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  wcs-button {
+    min-width: 0 !important;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  
+  /* Tables responsive */
+  table {
+    font-size: 0.85rem;
+  }
+  
+  th, td {
+    padding: 4px 8px !important;
+  }
+  
+  /* Fix pour les boutons qui dépassent */
+  .header-area, .nav-area, .content-area {
+    overflow-x: hidden;
+  }
+  
+  body, html {
+    overflow-x: hidden;
+  }
+}
+
+/* Fix spécifique pour le bouton connexion dans le header slot */
+@media (max-width: 768px) {
+  wcs-header [slot="actions"] {
+    margin-left: auto;
+    max-width: 120px;
+    overflow: hidden;
+  }
+  
+  wcs-header [slot="actions"] wcs-button {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  wcs-header [slot="actions"] {
+    max-width: 100px;
+  }
+  
+  wcs-header [slot="actions"] wcs-button {
+    font-size: 0.75rem;
+    padding: 0 8px !important;
+  }
+  
+  wcs-header [slot="actions"] wcs-icon {
+    display: none;
+  }
 }
 
 
@@ -131,22 +236,58 @@ h2 {
   align-items: flex-start;
   flex-wrap: wrap;
   justify-content: space-around;
-  align-items: center;
   width: 100%;
   margin: 0 auto;
+}
+
+/* Adaptations mobiles plus spécifiques */
+@media (max-width: 768px) {
+  .form-columns {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-columns {
+    gap: 8px;
+    padding: 0;
+  }
 }
 
 .form-columns .form-left,
 .form-columns .form-right {
   flex: 1;
   min-width: 320px;
-  max-width: 400px;
+  max-width: 40%;
 }
 
 .form-columns .form-right {
   min-width: 520px;
-  max-width: 600px;
+  max-width: 60%;
   position: relative;
+}
+
+/* Adaptations mobiles pour les colonnes */
+@media (max-width: 768px) {
+  .form-columns .form-left,
+  .form-columns .form-right {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-columns .form-left,
+  .form-columns .form-right {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 @media (max-width: 900px) {
@@ -186,7 +327,7 @@ h2 {
   grid-template-areas:
     "header header"
     "nav content";
-  grid-template-columns: clamp(120px, 18vw, 260px) 1fr;
+  grid-template-columns: clamp(80px, 10vw, 120px) 1fr;
   min-height: 100vh;
 }
 
@@ -209,6 +350,25 @@ h2 {
 }
 .content-area {
   grid-area: content;
+}
+
+/* Sépateur responsive */
+@media (max-width: 768px) {
+  .form-separator {
+    display: block;
+    width: 90%;
+    height: 1px;
+    background: var(--wcs-semantic-color-border-default, #ddd);
+    margin: 16px auto;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-separator {
+    width: 100%;
+    margin: 8px auto;
+  }
 }
 
 @media (max-width: 1700px) {

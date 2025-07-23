@@ -13,12 +13,29 @@ export async function apiGet(path = '', params = {}) {
 export async function apiPost(path = '', data = {}) {
   const url = new URL(API_BASE);
   if (path) url.searchParams.append('path', path);
+  
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
     credentials: 'include',
   });
-  if (!response.ok) throw new Error('Erreur API : ' + response.status);
-  return response.json();
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      const errorJson = JSON.parse(errorText);
+      const errorMessage = errorJson.error || errorJson.message || 'Erreur API : ' + response.status;
+      throw new Error(errorMessage);
+    } catch (parseError) {
+      // Si c'est notre propre erreur (pas une erreur de parsing), on la relance
+      if (parseError.message.startsWith('Un agent') || parseError.message.startsWith('Erreur API')) {
+        throw parseError;
+      }
+      throw new Error('Erreur API : ' + response.status);
+    }
+  }
+  
+  const result = await response.json();
+  return result;
 } 
