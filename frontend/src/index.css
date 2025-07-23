@@ -63,7 +63,7 @@ h2 {
   width: 85%;
   margin: 0 auto;
   padding-inline: 50px;
-  height: calc(100vh - 8 * var(--wcs-semantic-size-base));
+  height: calc(100vh - 10 * var(--wcs-semantic-size-base));
   overflow-x: auto;
   box-sizing: border-box;
 }
@@ -94,19 +94,19 @@ h2 {
     padding-inline: 8px;
     box-sizing: border-box;
   }
-  
+
   /* Ajustements spécifiques pour GestionPage */
   .gestion-container {
     padding: 20px 8px !important;
     box-sizing: border-box;
   }
-  
+
   /* Adaptations pour les boutons mobiles */
   wcs-button-group {
     flex-wrap: wrap;
     gap: 4px;
   }
-  
+
   wcs-button {
     min-width: 0 !important;
     flex-shrink: 1;
@@ -115,21 +115,21 @@ h2 {
     white-space: nowrap;
     max-width: 100%;
   }
-  
+
   /* Tables responsive */
   table {
     font-size: 0.85rem;
   }
-  
+
   th, td {
     padding: 4px 8px !important;
   }
-  
+
   /* Fix pour les boutons qui dépassent */
   .header-area, .nav-area, .content-area {
     overflow-x: hidden;
   }
-  
+
   body, html {
     overflow-x: hidden;
   }
@@ -142,7 +142,7 @@ h2 {
     max-width: 120px;
     overflow: hidden;
   }
-  
+
   wcs-header [slot="actions"] wcs-button {
     min-width: 0 !important;
     max-width: 100% !important;
@@ -154,12 +154,12 @@ h2 {
   wcs-header [slot="actions"] {
     max-width: 100px;
   }
-  
+
   wcs-header [slot="actions"] wcs-button {
     font-size: 0.75rem;
     padding: 0 8px !important;
   }
-  
+
   wcs-header [slot="actions"] wcs-icon {
     display: none;
   }
@@ -387,4 +387,32 @@ h2 {
     min-height: 0;
     align-self: center;
   }
+}
+
+/* Augmentation de la taille des textes de la nav bar x1.25 */
+wcs-nav-item {
+  --wcs-nav-item-font-size-desktop: calc(var(--wcs-semantic-font-size-label-3) * 1.25);
+  --wcs-nav-item-font-size-mobile: calc(calc(var(--wcs-semantic-font-size-body-1) / 2) * 1.25);
+}
+
+/* Augmentation de la taille du titre du header x1.25 */
+wcs-header h1[slot="title"] {
+  font-size: calc(var(--wcs-semantic-font-size-heading-3) * 0.75) !important;
+}
+
+/* Ajustement de la hauteur du header pour s'adapter au logo agrandi */
+wcs-header {
+  --wcs-header-height: calc(10 * var(--wcs-semantic-size-base));
+  --wcs-header-logo-height: calc(10 * var(--wcs-semantic-size-base));
+  --wcs-header-gap: var(--wcs-semantic-spacing-large);
+}
+
+/* Augmentation de la taille du logo x1.25 avec centrage vertical */
+wcs-header img[slot="logo"] {
+  height: var(--wcs-header-logo-height);
+  width: auto;
+  max-height: var(--wcs-header-logo-height);
+  align-self: center;
+  margin: 0;
+  object-fit: contain;
 }

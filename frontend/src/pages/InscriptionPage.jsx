@@ -16,6 +16,7 @@ export default function InscriptionPage() {
   const [loadingCreneaux, setLoadingCreneaux] = useState(false);
   const [fieldAlerts, setFieldAlerts] = useState({});
   const selectRef = useRef(null);
+  const checkboxRef = useRef(null);
   const timeoutRefs = useRef({});
 
   // Fonction pour fermer manuellement une alerte
@@ -62,6 +63,15 @@ export default function InscriptionPage() {
     });
   }, [fieldAlerts.nombreProches, closeAlert, creneaux]);
 
+  const handleWcsCheckboxChange = useCallback((e) => {
+    const checked = e.detail?.checked ?? e.target?.checked ?? false;
+    
+    if (fieldAlerts.restaurationSurPlace) {
+      closeAlert('restaurationSurPlace');
+    }
+    setForm(f => ({ ...f, restaurationSurPlace: checked }));
+  }, [fieldAlerts.restaurationSurPlace, closeAlert]);
+
   useEffect(() => {
     setLoadingCreneaux(true);
     apiGet('creneaux')
@@ -84,6 +94,29 @@ export default function InscriptionPage() {
       };
     }
   }, [handleWcsSelectChange]);
+
+  useEffect(() => {
+    const checkboxElement = checkboxRef.current;
+    if (checkboxElement) {
+      const handleWcsChangeEvent = (event) => {
+        handleWcsCheckboxChange(event);
+      };
+      
+      checkboxElement.addEventListener('wcsChange', handleWcsChangeEvent);
+      
+      return () => {
+        checkboxElement.removeEventListener('wcsChange', handleWcsChangeEvent);
+      };
+    }
+  }, [handleWcsCheckboxChange]);
+
+  // Synchroniser la checkbox WCS avec l'état React
+  useEffect(() => {
+    const checkboxElement = checkboxRef.current;
+    if (checkboxElement) {
+      checkboxElement.checked = form.restaurationSurPlace;
+    }
+  }, [form.restaurationSurPlace]);
 
   // Cleanup des timeouts lors du démontage du composant
   useEffect(() => {
@@ -244,6 +277,11 @@ export default function InscriptionPage() {
         type: 'success'
       }, 6000);
       setForm({ codePersonnel: '', nom: '', prenom: '', email: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
+      
+      // Recharger les créneaux pour mettre à jour les indicateurs de places
+      apiGet('creneaux')
+        .then(data => setCreneaux(data))
+        .catch(() => setCreneaux({ matin: {}, 'apres-midi': {} }));
     } catch (e) {
       const msg = (e.message || '').toLowerCase();
       
@@ -397,9 +435,9 @@ export default function InscriptionPage() {
             </wcs-form-field>
             <wcs-form-field>
               <wcs-checkbox 
+                ref={checkboxRef}
                 name="restaurationSurPlace"
                 checked={form.restaurationSurPlace}
-                onChange={handleChange}
                 disabled={loading}
               >
                 🍽️ Je suis intéressé(e) par la restauration sur place
