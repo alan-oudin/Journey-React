@@ -204,7 +204,7 @@ export default function RecherchePage() {
                                     </div>
 
                                     <div style={{padding: '12px', border: '1px solid #e0e0e0', borderRadius: '6px'}}>
-                                        <div style={{fontWeight: 'bold', marginBottom: '4px'}}>🍽️ Restauration</div>
+                                        <div style={{fontWeight: 'bold', marginBottom: ' 4px'}}>🍽️ Restauration</div>
                                         <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                                             {agentTrouve.restauration_sur_place === 1 || agentTrouve.restauration_sur_place === true ? (
                                                 <>
