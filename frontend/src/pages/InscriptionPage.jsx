@@ -8,7 +8,8 @@ export default function InscriptionPage() {
     prenom: '',
     email: '',
     nombreProches: '',
-    heureArrivee: ''
+    heureArrivee: '',
+    restaurationSurPlace: false
   });
   const [loading, setLoading] = useState(false);
   const [creneaux, setCreneaux] = useState({ matin: {}, 'apres-midi': {} });
@@ -95,7 +96,7 @@ export default function InscriptionPage() {
   }, []);
 
   const handleChange = e => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     
     // Nettoyer les alertes WCS en cours de modification
     if (fieldAlerts[name]) {
@@ -103,7 +104,7 @@ export default function InscriptionPage() {
     }
     
     setForm(f => {
-      const newForm = { ...f, [name]: value };
+      const newForm = { ...f, [name]: type === 'checkbox' ? checked : value };
       
       // Si on change le nombre de proches, réinitialiser la sélection de créneau
       // si le créneau actuel devient insuffisant
@@ -233,7 +234,8 @@ export default function InscriptionPage() {
         nom: form.nom,
         prenom: form.prenom,
         nombre_proches: Number(form.nombreProches),
-        heure_arrivee: form.heureArrivee
+        heure_arrivee: form.heureArrivee,
+        restauration_sur_place: form.restaurationSurPlace ? 1 : 0
       });
       
       // Afficher un message de succès via une alerte WCS
@@ -241,7 +243,7 @@ export default function InscriptionPage() {
         message: 'Inscription réussie !',
         type: 'success'
       }, 6000);
-      setForm({ codePersonnel: '', nom: '', prenom: '', email: '', nombreProches: '', heureArrivee: '' });
+      setForm({ codePersonnel: '', nom: '', prenom: '', email: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
     } catch (e) {
       const msg = (e.message || '').toLowerCase();
       
@@ -392,6 +394,17 @@ export default function InscriptionPage() {
                 <wcs-select-option value="4">4 proches (maximum autorisé)</wcs-select-option>
               </wcs-select>
               <wcs-hint id="hint-nbproches">Nombre de proches maximum autorisé : 4</wcs-hint>
+            </wcs-form-field>
+            <wcs-form-field>
+              <wcs-checkbox 
+                name="restaurationSurPlace"
+                checked={form.restaurationSurPlace}
+                onChange={handleChange}
+                disabled={loading}
+              >
+                🍽️ Je suis intéressé(e) par la restauration sur place
+              </wcs-checkbox>
+              <wcs-hint>Cochez cette case si vous souhaitez bénéficier de la restauration sur place lors de la journée</wcs-hint>
             </wcs-form-field>
           </div>
           <div className="form-separator"></div>

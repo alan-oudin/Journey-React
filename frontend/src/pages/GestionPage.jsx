@@ -382,6 +382,11 @@ export default function GestionPage() {
             <StatCard number={stats ? stats.agents_inscrits : 0} label="Inscrits" />
             <StatCard number={stats ? stats.agents_absents : 0} label="Absents" />
             <StatCard number={stats ? stats.total_personnes : 0} label="Total personnes" />
+            <StatCard 
+              number={stats ? `${stats.taux_restauration || 0}%` : '0%'} 
+              label="Restauration sur place" 
+              subtitle={stats ? `${stats.agents_restauration || 0} personnes intéressées` : '0 personnes'}
+            />
           </div>
 
           <wcs-button color="primary" style={{marginTop: 16, marginBottom: 16}} onClick={handleExportCSV} disabled={loading || agents.length === 0}>
@@ -683,6 +688,26 @@ export default function GestionPage() {
                   <span style={{ color: '#666', fontSize: '0.9em', marginLeft: 8 }}>
                     (agent + {modalAgent.nombre_proches} proche{modalAgent.nombre_proches > 1 ? 's' : ''})
                   </span>
+                </div>
+              </div>
+
+              {/* Section Restauration sur place */}
+              <div>
+                <strong>Restauration sur place :</strong>
+                <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {modalAgent.restauration_sur_place === 1 || modalAgent.restauration_sur_place === true ? (
+                    <>
+                      <span style={{ color: '#28a745', fontSize: '1.2em' }}>✅</span>
+                      <span style={{ color: '#28a745', fontWeight: 500 }}>Oui</span>
+                      <span style={{ color: '#666', fontSize: '0.9em' }}>- Intéressé(e) par la restauration</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: '#6c757d', fontSize: '1.2em' }}>❌</span>
+                      <span style={{ color: '#6c757d' }}>Non</span>
+                      <span style={{ color: '#666', fontSize: '0.9em' }}>- Pas intéressé(e)</span>
+                    </>
+                  )}
                 </div>
               </div>
 
