@@ -139,7 +139,7 @@ export default function RecherchePage() {
     };
 
     return (
-        <div>
+        <div className="gestion-container" style={{padding: '40px 20px',margin: '0 auto'}}>
             <h2>🔍 Recherche & Pointage - Jour J</h2>
             <p>Interface de recherche rapide et gestion des présences</p>
 

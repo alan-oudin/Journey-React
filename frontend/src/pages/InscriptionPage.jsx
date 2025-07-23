@@ -329,7 +329,7 @@ export default function InscriptionPage() {
   ];
 
   return (
-    <div className="gestion-container" style={{padding: '40px 20px'}}>
+    <div className="gestion-container" style={{padding: '40px 20px', margin: '0 auto'}}>
       <h2>📝 Inscription d'un agent</h2>
       <p>Journée des Proches - Système d'inscription en amont</p>
 
@@ -434,7 +434,7 @@ export default function InscriptionPage() {
               <wcs-hint id="hint-nbproches">Nombre de proches maximum autorisé : 4</wcs-hint>
             </wcs-form-field>
             <wcs-form-field>
-              <wcs-checkbox 
+              <wcs-checkbox
                 ref={checkboxRef}
                 name="restaurationSurPlace"
                 checked={form.restaurationSurPlace}
@@ -447,7 +447,7 @@ export default function InscriptionPage() {
           </div>
           <div className="form-separator"></div>
           <div className="form-right">
-            <wcs-form-field style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
               <wcs-label required>Heure d'arrivée souhaitée</wcs-label>
               {loadingCreneaux ? (
                 <div>Chargement des créneaux...</div>
@@ -508,7 +508,7 @@ export default function InscriptionPage() {
                 </div>
               )}
               <wcs-hint>Choisissez un créneau disponible</wcs-hint>
-            </wcs-form-field>
+            </div>
           </div>
         </div>
         <wcs-button type="submit" color="primary" shape="block" disabled={loading} style={{marginTop: 100,width: '100%'}}>

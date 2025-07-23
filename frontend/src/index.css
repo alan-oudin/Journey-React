@@ -416,3 +416,8 @@ wcs-header img[slot="logo"] {
   margin: 0;
   object-fit: contain;
 }
+
+/* Espacement entre les form-fields */
+wcs-form-field {
+  margin-bottom: var(--wcs-semantic-spacing-large);
+}
