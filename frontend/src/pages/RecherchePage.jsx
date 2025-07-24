@@ -1,7 +1,9 @@
 import React, {useState} from 'react';
 import {apiGet} from '../api';
+import { useAlertDrawer } from '../contexts/AlertContext.tsx';
 
 export default function RecherchePage() {
+    const { showAlert } = useAlertDrawer();
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [agentTrouve, setAgentTrouve] = useState(null);
@@ -23,7 +25,13 @@ export default function RecherchePage() {
             setAgentTrouve(agent);
         } catch (e) {
             setAgentTrouve(null);
-            setError("L'agent n'est pas inscrit");
+            showAlert({
+                title: 'Erreur de recherche',
+                subtitle: "L'agent n'est pas inscrit",
+                intent: 'error',
+                showProgressBar: true,
+                timeout: 5000
+            });
         } finally {
             setLoading(false);
         }
@@ -47,12 +55,30 @@ export default function RecherchePage() {
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, statut: nouveauStatut }));
-                setError('');
+                showAlert({
+                    title: 'Succès',
+                    subtitle: `Statut modifié : ${nouveauStatut}`,
+                    intent: 'success',
+                    showProgressBar: true,
+                    timeout: 5000
+                });
             } else {
-                setError(data.error || 'Erreur lors de la modification du statut');
+                showAlert({
+                    title: 'Erreur',
+                    subtitle: data.error || 'Erreur lors de la modification du statut',
+                    intent: 'error',
+                    showProgressBar: true,
+                    timeout: 5000
+                });
             }
         } catch (e) {
-            setError('Erreur de connexion au serveur');
+            showAlert({
+                title: 'Erreur',
+                subtitle: 'Erreur de connexion au serveur',
+                intent: 'error',
+                showProgressBar: true,
+                timeout: 5000
+            });
         } finally {
             setActionLoading(false);
         }
@@ -94,12 +120,30 @@ export default function RecherchePage() {
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, note: null }));
-                setError('');
+                showAlert({
+                    title: 'Succès',
+                    subtitle: 'Note supprimée avec succès',
+                    intent: 'success',
+                    showProgressBar: true,
+                    timeout: 5000
+                });
             } else {
-                setError(data.error || 'Erreur lors de la suppression de la note');
+                showAlert({
+                    title: 'Erreur',
+                    subtitle: data.error || 'Erreur lors de la suppression de la note',
+                    intent: 'error',
+                    showProgressBar: true,
+                    timeout: 5000
+                });
             }
         } catch (e) {
-            setError('Erreur de connexion au serveur');
+            showAlert({
+                title: 'Erreur',
+                subtitle: 'Erreur de connexion au serveur',
+                intent: 'error',
+                showProgressBar: true,
+                timeout: 5000
+            });
         } finally {
             setActionLoading(false);
         }
@@ -127,12 +171,30 @@ export default function RecherchePage() {
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, note: noteText.trim() }));
                 setShowNoteModal(false);
-                setError('');
+                showAlert({
+                    title: 'Succès',
+                    subtitle: 'Note sauvegardée avec succès',
+                    intent: 'success',
+                    showProgressBar: true,
+                    timeout: 5000
+                });
             } else {
-                setError(data.error || 'Erreur lors de la sauvegarde de la note');
+                showAlert({
+                    title: 'Erreur',
+                    subtitle: data.error || 'Erreur lors de la sauvegarde de la note',
+                    intent: 'error',
+                    showProgressBar: true,
+                    timeout: 5000
+                });
             }
         } catch (e) {
-            setError('Erreur de connexion au serveur');
+            showAlert({
+                title: 'Erreur',
+                subtitle: 'Erreur de connexion au serveur',
+                intent: 'error',
+                showProgressBar: true,
+                timeout: 5000
+            });
         } finally {
             setActionLoading(false);
         }
@@ -143,12 +205,6 @@ export default function RecherchePage() {
             <h2>🔍 Recherche & Pointage - Jour J</h2>
             <p>Interface de recherche rapide et gestion des présences</p>
 
-            {error && (
-                <wcs-alert color="danger" show>
-                    {error}
-                    <wcs-button slot="action" shape="clear" onClick={() => setError('')}>Fermer</wcs-button>
-                </wcs-alert>
-            )}
 
             <wcs-form-field label="Code personnel (CP)">
                 <wcs-input

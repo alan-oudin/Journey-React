@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { apiPost, apiGet } from '../api';
+import { useAlertDrawer } from '../contexts/AlertContext.tsx';
 
 export default function InscriptionPage() {
+  const { showAlert } = useAlertDrawer();
   const [form, setForm] = useState({
     codePersonnel: '',
     nom: '',
@@ -14,34 +16,14 @@ export default function InscriptionPage() {
   const [loading, setLoading] = useState(false);
   const [creneaux, setCreneaux] = useState({ matin: {}, 'apres-midi': {} });
   const [loadingCreneaux, setLoadingCreneaux] = useState(false);
-  const [fieldAlerts, setFieldAlerts] = useState({});
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showInfoAlert, setShowInfoAlert] = useState(true);
   const selectRef = useRef(null);
   const checkboxRef = useRef(null);
-  const timeoutRefs = useRef({});
 
-  // Fonction pour fermer manuellement une alerte
-  const closeAlert = useCallback((field) => {
-    // Annuler le timeout si il existe
-    if (timeoutRefs.current[field]) {
-      clearTimeout(timeoutRefs.current[field]);
-      delete timeoutRefs.current[field];
-    }
-    
-    // Supprimer l'alerte
-    setFieldAlerts(prev => {
-      const newAlerts = {...prev};
-      delete newAlerts[field];
-      return newAlerts;
-    });
-  }, []);
 
   const handleWcsSelectChange = useCallback((e) => {
     const value = e.detail.value;
-    
-    // Nettoyer l'alerte WCS du select
-    if (fieldAlerts.nombreProches) {
-      closeAlert('nombreProches');
-    }
     
     setForm(f => {
       const newForm = { ...f, nombreProches: value };
@@ -61,16 +43,12 @@ export default function InscriptionPage() {
       
       return newForm;
     });
-  }, [fieldAlerts.nombreProches, closeAlert, creneaux]);
+  }, [creneaux]);
 
   const handleWcsCheckboxChange = useCallback((e) => {
     const checked = e.detail?.checked ?? e.target?.checked ?? false;
-    
-    if (fieldAlerts.restaurationSurPlace) {
-      closeAlert('restaurationSurPlace');
-    }
     setForm(f => ({ ...f, restaurationSurPlace: checked }));
-  }, [fieldAlerts.restaurationSurPlace, closeAlert]);
+  }, []);
 
   useEffect(() => {
     setLoadingCreneaux(true);
@@ -78,6 +56,20 @@ export default function InscriptionPage() {
       .then(data => setCreneaux(data))
       .catch(() => setCreneaux({ matin: {}, 'apres-midi': {} }))
       .finally(() => setLoadingCreneaux(false));
+    
+    // Vérifier l'état d'authentification
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      setIsAuthenticated(!!token);
+    };
+    
+    checkAuth();
+    // Écouter les changements du localStorage
+    window.addEventListener('storage', checkAuth);
+    
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+    };
   }, []);
 
   useEffect(() => {
@@ -118,26 +110,13 @@ export default function InscriptionPage() {
     }
   }, [form.restaurationSurPlace]);
 
-  // Cleanup des timeouts lors du démontage du composant
-  useEffect(() => {
-    return () => {
-      const currentTimeouts = timeoutRefs.current;
-      Object.values(currentTimeouts).forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-    };
-  }, []);
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
-    
-    // Nettoyer les alertes WCS en cours de modification
-    if (fieldAlerts[name]) {
-      closeAlert(name);
-    }
+    const newValue = type === 'checkbox' ? checked : value;
     
     setForm(f => {
-      const newForm = { ...f, [name]: type === 'checkbox' ? checked : value };
+      const newForm = { ...f, [name]: newValue };
       
       // Si on change le nombre de proches, réinitialiser la sélection de créneau
       // si le créneau actuel devient insuffisant
@@ -219,45 +198,20 @@ export default function InscriptionPage() {
     return info.places_restantes >= personnesAInscrire;
   };
 
-  // Fonction pour gérer les timeouts automatiques des alertes
-  const setAlertWithTimeout = (field, alertData, timeout = 5000) => {
-    // Annuler le timeout précédent pour ce champ s'il existe
-    if (timeoutRefs.current[field]) {
-      clearTimeout(timeoutRefs.current[field]);
-    }
-    
-    // Mettre à jour l'alerte
-    setFieldAlerts(prev => ({
-      ...prev,
-      [field]: alertData
-    }));
-    
-    // Programmer la suppression automatique
-    timeoutRefs.current[field] = setTimeout(() => {
-      setFieldAlerts(prev => {
-        const newAlerts = {...prev};
-        delete newAlerts[field];
-        return newAlerts;
-      });
-      delete timeoutRefs.current[field];
-    }, timeout);
-  };
 
   const handleSubmit = async e => {
     e.preventDefault();
     const newErrors = validate();
     
-    // Convertir les erreurs en format { message, type } pour WCS alerts
-    const formattedErrors = {};
-    Object.keys(newErrors).forEach(field => {
-      formattedErrors[field] = {
-        message: newErrors[field],
-        type: 'error'
-      };
-    });
-    setFieldAlerts(formattedErrors);
-    
+    // Afficher les erreurs de validation une par une
     if (Object.keys(newErrors).length > 0) {
+      Object.values(newErrors).forEach(errorMessage => {
+        showAlert({
+          title: 'Erreur de validation',
+          subtitle: errorMessage,
+          intent: 'error'
+        });
+      });
       return;
     }
     setLoading(true);
@@ -271,11 +225,12 @@ export default function InscriptionPage() {
         restauration_sur_place: form.restaurationSurPlace ? 1 : 0
       });
       
-      // Afficher un message de succès via une alerte WCS
-      setAlertWithTimeout('success', {
-        message: 'Inscription réussie !',
-        type: 'success'
-      }, 6000);
+      // Afficher un message de succès
+      showAlert({
+        title: 'Succès',
+        subtitle: 'Inscription réussie !',
+        intent: 'success'
+      });
       setForm({ codePersonnel: '', nom: '', prenom: '', email: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
       
       // Recharger les créneaux pour mettre à jour les indicateurs de places
@@ -289,32 +244,37 @@ export default function InscriptionPage() {
       if ((msg.includes('agent') && (msg.includes('déjà inscrit') || msg.includes('deja inscrit') || msg.includes('existe'))) || msg.includes('code personnel')) {
         const errorMessage = "Ce code personnel est déjà utilisé. Chaque agent ne peut s'inscrire qu'une seule fois.";
         
-        setAlertWithTimeout('codePersonnel', {
-          message: errorMessage,
-          type: 'error'
-        }, 8000); // 8 secondes pour les erreurs importantes
+        showAlert({
+          title: 'Erreur',
+          subtitle: errorMessage,
+          intent: 'error'
+        });
       } else if (msg.includes('capacité') || msg.includes('complet') || msg.includes('dépassée')) {
         const errorMessage = "Le créneau sélectionné est complet. Veuillez choisir un autre créneau.";
         
-        setAlertWithTimeout('heureArrivee', {
-          message: errorMessage,
-          type: 'error'
-        }, 8000); // 8 secondes pour les erreurs importantes
+        showAlert({
+          title: 'Erreur',
+          subtitle: errorMessage,
+          intent: 'error'
+        });
       } else if (msg.includes('network') || msg.includes('fetch')) {
-        setAlertWithTimeout('network', {
-          message: "Erreur de connexion au serveur. Vérifiez que WAMP est démarré et réessayez.",
-          type: 'error'
-        }, 10000);
+        showAlert({
+          title: 'Erreur',
+          subtitle: "Erreur de connexion au serveur. Vérifiez que WAMP est démarré et réessayez.",
+          intent: 'error'
+        });
       } else if (msg.includes('500')) {
-        setAlertWithTimeout('server', {
-          message: "Erreur du serveur. Vérifiez la base de données et les logs du serveur.",
-          type: 'error'
-        }, 10000);
+        showAlert({
+          title: 'Erreur',
+          subtitle: "Erreur du serveur. Vérifiez la base de données et les logs du serveur.",
+          intent: 'error'
+        });
       } else {
-        setAlertWithTimeout('general', {
-          message: `Erreur lors de l'inscription : ${e.message}`,
-          type: 'error'
-        }, 10000);
+        showAlert({
+          title: 'Erreur',
+          subtitle: `Erreur lors de l'inscription : ${e.message}`,
+          intent: 'error'
+        });
       }
     } finally {
       setLoading(false);
@@ -328,38 +288,13 @@ export default function InscriptionPage() {
     '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00', '15:20', '15:40'
   ];
 
+
+
+
   return (
     <div className="gestion-container" style={{padding: '40px 20px', margin: '0 auto'}}>
       <h2>📝 Inscription d'un agent</h2>
       <p>Journée des Proches - Système d'inscription en amont</p>
-
-      {/* Alertes WCS */}
-      {Object.keys(fieldAlerts).map(field => (
-        <wcs-alert 
-          key={field} 
-          intent={fieldAlerts[field].type === 'success' ? 'success' : 'error'} 
-          show 
-          style={{
-            marginBottom: 16,
-            ...(fieldAlerts[field].type === 'success' && {
-              borderLeft: '4px solid #28a745',
-              backgroundColor: '#d4edda'
-            })
-          }}
-        >
-          <span slot="title">
-            {fieldAlerts[field].type === 'success' ? '✅ ' : '❌ '}
-            {fieldAlerts[field].message}
-          </span>
-          <wcs-button 
-            slot="action" 
-            shape="clear" 
-            onClick={() => closeAlert(field)}
-          >
-            Fermer
-          </wcs-button>
-        </wcs-alert>
-      ))}
 
       {loading && (
         <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>
@@ -448,7 +383,9 @@ export default function InscriptionPage() {
           <div className="form-separator"></div>
           <div className="form-right">
             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-              <wcs-label required>Heure d'arrivée souhaitée</wcs-label>
+              <wcs-label
+                  style={{ marginBottom: 50 }}
+                  required>Heure d'arrivée souhaitée</wcs-label>
               {loadingCreneaux ? (
                 <div>Chargement des créneaux...</div>
               ) : (

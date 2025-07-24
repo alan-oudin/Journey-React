@@ -135,6 +135,7 @@ h2 {
   }
 }
 
+
 /* Fix spécifique pour le bouton connexion dans le header slot */
 @media (max-width: 768px) {
   wcs-header [slot="actions"] {
@@ -233,7 +234,7 @@ h2 {
 .form-columns {
   display: flex;
   gap: 32px;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
   justify-content: space-around;
   width: 100%;
@@ -260,12 +261,11 @@ h2 {
 .form-columns .form-right {
   flex: 1;
   min-width: 320px;
-  max-width: 40%;
 }
+
 
 .form-columns .form-right {
   min-width: 520px;
-  max-width: 60%;
   position: relative;
 }
 
@@ -420,4 +420,14 @@ wcs-header img[slot="logo"] {
 /* Espacement entre les form-fields */
 wcs-form-field {
   margin-bottom: var(--wcs-semantic-spacing-large);
+}
+
+/* Centrage du titre d'inscription */
+.gestion-container h2 {
+  text-align: center;
+}
+
+.gestion-container p {
+  text-align: center;
+  padding-bottom: 50px;
 }
