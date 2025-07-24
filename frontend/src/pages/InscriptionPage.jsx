@@ -351,7 +351,7 @@ export default function InscriptionPage() {
             {fieldAlerts[field].type === 'success' ? '✅ ' : '❌ '}
             {fieldAlerts[field].message}
           </span>
-          <wcs-button 
+          <wcs-button
             slot="action" 
             shape="clear" 
             onClick={() => closeAlert(field)}
@@ -448,7 +448,9 @@ export default function InscriptionPage() {
           <div className="form-separator"></div>
           <div className="form-right">
             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-              <wcs-label required>Heure d'arrivée souhaitée</wcs-label>
+              <wcs-label
+                  style={{ marginBottom: 50 }}
+                  required>Heure d'arrivée souhaitée</wcs-label>
               {loadingCreneaux ? (
                 <div>Chargement des créneaux...</div>
               ) : (
