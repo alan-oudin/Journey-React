@@ -101,6 +101,22 @@ try {
         )
     ");
 
+    // Créer la table d'historique des modifications
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS agent_modifications_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            agent_id INT NOT NULL,
+            code_personnel VARCHAR(8) NOT NULL,
+            field_name VARCHAR(50) NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            modified_by VARCHAR(50),
+            modification_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_agent_code (code_personnel),
+            INDEX idx_modification_date (modification_date)
+        )
+    ");
+
     // Vérifier si un admin par défaut existe déjà
     $stmt = $pdo->query("SELECT COUNT(*) as count FROM admins");
     $result = $stmt->fetch();
@@ -119,7 +135,7 @@ try {
         error_log('Admin par défaut créé: admin/admin123');
     }
 } catch (PDOException $e) {
-    error_log('Erreur lors de la création de la table admins: ' . $e->getMessage());
+    error_log('Erreur lors de la création des tables: ' . $e->getMessage());
 }
 
 // Récupération du path
@@ -330,6 +346,21 @@ try {
                     $params[] = $input['note'];
                 }
 
+                if (isset($input['nom'])) {
+                    $updates[] = "nom = ?";
+                    $params[] = strtoupper(trim($input['nom']));
+                }
+
+                if (isset($input['prenom'])) {
+                    $updates[] = "prenom = ?";
+                    $params[] = ucfirst(strtolower(trim($input['prenom'])));
+                }
+
+                if (isset($input['restauration_sur_place'])) {
+                    $updates[] = "restauration_sur_place = ?";
+                    $params[] = (int)$input['restauration_sur_place'];
+                }
+
                 if (empty($updates)) {
                     throw new Exception('Aucune modification spécifiée');
                 }
@@ -338,10 +369,60 @@ try {
                 $updates[] = "updated_at = NOW()";
                 $params[] = $code;
 
+                // Préparer l'historique des modifications avant la mise à jour
+                $changesHistory = [];
+                foreach ($input as $field => $newValue) {
+                    if (isset($agent[$field]) && $agent[$field] != $newValue) {
+                        $changesHistory[] = [
+                            'field' => $field,
+                            'old_value' => $agent[$field],
+                            'new_value' => $newValue
+                        ];
+                    }
+                }
+
                 // Exécuter la mise à jour
                 $sql = "UPDATE agents_inscriptions SET " . implode(', ', $updates) . " WHERE code_personnel = ?";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute($params);
+
+                // Enregistrer l'historique des modifications
+                if (!empty($changesHistory)) {
+                    // Récupérer les informations de l'utilisateur administrateur connecté
+                    $headers = getallheaders();
+                    $authHeader = $headers['Authorization'] ?? '';
+                    $modifiedBy = 'unknown';
+                    
+                    if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                        $token = $matches[1];
+                        try {
+                            $payload = json_decode(base64_decode($token), true);
+                            if ($payload && isset($payload['username'])) {
+                                $modifiedBy = $payload['username'];
+                            }
+                        } catch (Exception $e) {
+                            // Si on ne peut pas décoder le token, on garde 'unknown'
+                        }
+                    }
+
+                    // Insérer chaque modification dans l'historique
+                    $historyStmt = $pdo->prepare("
+                        INSERT INTO agent_modifications_history 
+                        (agent_id, code_personnel, field_name, old_value, new_value, modified_by) 
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    
+                    foreach ($changesHistory as $change) {
+                        $historyStmt->execute([
+                            $agent['id'],
+                            $code,
+                            $change['field'],
+                            $change['old_value'],
+                            $change['new_value'],
+                            $modifiedBy
+                        ]);
+                    }
+                }
 
                 // Récupérer l'agent mis à jour
                 $stmt = $pdo->prepare("SELECT * FROM agents_inscriptions WHERE code_personnel = ?");
@@ -418,6 +499,65 @@ try {
                 }
             } else {
                 throw new Exception('Méthode non autorisée pour /search');
+            }
+            break;
+
+        case 'history':
+            if ($method === 'GET') {
+                // Vérifier l'authentification
+                $headers = getallheaders();
+                $authHeader = $headers['Authorization'] ?? '';
+                
+                if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Token d\'authentification requis']);
+                    return;
+                }
+                
+                $token = $matches[1];
+                try {
+                    $payload = json_decode(base64_decode($token), true);
+                    if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                        throw new Exception('Token expiré');
+                    }
+                } catch (Exception $e) {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Token invalide']);
+                    return;
+                }
+
+                $code = $_GET['code'] ?? '';
+                if (empty($code)) {
+                    throw new Exception('Code personnel manquant pour l\'historique');
+                }
+
+                // Récupérer l'historique des modifications pour cet agent
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        h.id,
+                        h.field_name,
+                        h.old_value,
+                        h.new_value,
+                        h.modified_by,
+                        h.modification_date,
+                        a.nom,
+                        a.prenom
+                    FROM agent_modifications_history h
+                    LEFT JOIN agents_inscriptions a ON h.agent_id = a.id
+                    WHERE h.code_personnel = ?
+                    ORDER BY h.modification_date DESC
+                    LIMIT 50
+                ");
+                $stmt->execute([$code]);
+                $history = $stmt->fetchAll();
+
+                echo json_encode([
+                    'success' => true,
+                    'history' => $history,
+                    'code_personnel' => $code
+                ]);
+            } else {
+                throw new Exception('Méthode non autorisée pour /history');
             }
             break;
 
@@ -717,6 +857,125 @@ try {
             }
             break;
 
+        case 'admins':
+            // Vérifier l'authentification pour les routes admin
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? '';
+            
+            if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token d\'authentification requis']);
+                return;
+            }
+            
+            $token = $matches[1];
+            try {
+                $payload = json_decode(base64_decode($token), true);
+                if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                    throw new Exception('Token expiré');
+                }
+                
+                $stmt = $pdo->prepare("SELECT id, role FROM admins WHERE id = ? AND username = ?");
+                $stmt->execute([$payload['sub'], $payload['username']]);
+                $currentUser = $stmt->fetch();
+                
+                if (!$currentUser) {
+                    throw new Exception('Utilisateur non trouvé');
+                }
+            } catch (Exception $e) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token invalide']);
+                return;
+            }
+            
+            if ($method === 'GET') {
+                // Lister tous les administrateurs
+                $stmt = $pdo->query("
+                    SELECT id, username, role, created_at, updated_at 
+                    FROM admins 
+                    ORDER BY created_at DESC
+                ");
+                $admins = $stmt->fetchAll();
+                echo json_encode($admins);
+                
+            } elseif ($method === 'POST') {
+                // Ajouter un nouvel administrateur
+                $input = json_decode(file_get_contents('php://input'), true);
+                
+                if (!$input || !isset($input['username']) || !isset($input['password'])) {
+                    throw new Exception('Nom d\'utilisateur et mot de passe requis');
+                }
+                
+                // Vérifier que l'utilisateur n'existe pas déjà
+                $stmt = $pdo->prepare("SELECT id FROM admins WHERE username = ?");
+                $stmt->execute([$input['username']]);
+                if ($stmt->fetch()) {
+                    throw new Exception('Un utilisateur avec ce nom existe déjà');
+                }
+                
+                $role = $input['role'] ?? 'admin';
+                if (!in_array($role, ['admin', 'super-admin'])) {
+                    throw new Exception('Rôle invalide');
+                }
+                
+                // Hacher le mot de passe
+                $hashedPassword = password_hash($input['password'], PASSWORD_DEFAULT);
+                
+                // Insérer le nouvel administrateur
+                $stmt = $pdo->prepare("
+                    INSERT INTO admins (username, password, role) 
+                    VALUES (?, ?, ?)
+                ");
+                $stmt->execute([$input['username'], $hashedPassword, $role]);
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Administrateur ajouté avec succès',
+                    'id' => $pdo->lastInsertId()
+                ]);
+                
+            } elseif ($method === 'DELETE') {
+                // Supprimer un administrateur
+                $adminId = $_GET['id'] ?? '';
+                if (empty($adminId)) {
+                    throw new Exception('ID de l\'administrateur manquant');
+                }
+                
+                // Empêcher la suppression de l'admin par défaut (ID 1)
+                if ($adminId == 1) {
+                    throw new Exception('Impossible de supprimer l\'administrateur par défaut');
+                }
+                
+                // Empêcher de se supprimer soi-même
+                if ($adminId == $currentUser['id']) {
+                    throw new Exception('Vous ne pouvez pas supprimer votre propre compte');
+                }
+                
+                // Vérifier que l'admin existe
+                $stmt = $pdo->prepare("SELECT username FROM admins WHERE id = ?");
+                $stmt->execute([$adminId]);
+                $admin = $stmt->fetch();
+                
+                if (!$admin) {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Administrateur non trouvé']);
+                    return;
+                }
+                
+                // Supprimer l'administrateur
+                $stmt = $pdo->prepare("DELETE FROM admins WHERE id = ?");
+                $stmt->execute([$adminId]);
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Administrateur {$admin['username']} supprimé avec succès"
+                ]);
+                
+            } else {
+                throw new Exception('Méthode non autorisée pour /admins');
+            }
+            break;
+
         default:
             // Page d'accueil de l'API avec documentation complète
             echo json_encode([
@@ -732,6 +991,7 @@ try {
                     'PUT /agents?code=CODE' => 'Modifier un agent (statut, etc.)',
                     'DELETE /agents?code=CODE' => 'Supprimer un agent',
                     'GET /search?q=CODE' => 'Rechercher un agent par code personnel',
+                    'GET /history?code=CODE' => 'Historique des modifications d\'un agent',
                     'GET /creneaux' => 'Disponibilités de tous les créneaux',
                     'GET /stats' => 'Statistiques complètes avec statuts',
                     'GET /export' => 'Télécharger export CSV complet',

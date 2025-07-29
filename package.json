@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "wcs-core": "^7.2.2",
     "wcs-react": "^7.2.2"
   }
 }

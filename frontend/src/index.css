@@ -68,102 +68,6 @@ h2 {
   box-sizing: border-box;
 }
 
-/* Adaptations mobiles pour main-content */
-@media (max-width: 768px) {
-  .main-content {
-    width: 95%;
-    margin: 0 auto;
-    padding-inline: 20px;
-    box-sizing: border-box;
-  }
-}
-
-@media (max-width: 600px) {
-  .main-content {
-    width: 100%;
-    margin: 0 auto;
-    padding-inline: 16px;
-    box-sizing: border-box;
-  }
-}
-
-@media (max-width: 480px) {
-  .main-content {
-    width: 100%;
-    margin: 0 auto;
-    padding-inline: 8px;
-    box-sizing: border-box;
-  }
-
-  /* Ajustements spécifiques pour GestionPage */
-  .gestion-container {
-    padding: 20px 8px !important;
-    box-sizing: border-box;
-  }
-
-  /* Adaptations pour les boutons mobiles */
-  wcs-button-group {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  wcs-button {
-    min-width: 0 !important;
-    flex-shrink: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-
-  /* Tables responsive */
-  table {
-    font-size: 0.85rem;
-  }
-
-  th, td {
-    padding: 4px 8px !important;
-  }
-
-  /* Fix pour les boutons qui dépassent */
-  .header-area, .nav-area, .content-area {
-    overflow-x: hidden;
-  }
-
-  body, html {
-    overflow-x: hidden;
-  }
-}
-
-/* Fix spécifique pour le bouton connexion dans le header slot */
-@media (max-width: 768px) {
-  wcs-header [slot="actions"] {
-    margin-left: auto;
-    max-width: 120px;
-    overflow: hidden;
-  }
-
-  wcs-header [slot="actions"] wcs-button {
-    min-width: 0 !important;
-    max-width: 100% !important;
-    font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 480px) {
-  wcs-header [slot="actions"] {
-    max-width: 100px;
-  }
-
-  wcs-header [slot="actions"] wcs-button {
-    font-size: 0.75rem;
-    padding: 0 8px !important;
-  }
-
-  wcs-header [slot="actions"] wcs-icon {
-    display: none;
-  }
-}
 
 
 /* Déclaration des polices Avenir (inchangé) */
@@ -240,21 +144,6 @@ h2 {
   margin: 0 auto;
 }
 
-/* Adaptations mobiles plus spécifiques */
-@media (max-width: 768px) {
-  .form-columns {
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-columns {
-    gap: 8px;
-    padding: 0;
-  }
-}
 
 .form-columns .form-left,
 .form-columns .form-right {
@@ -268,33 +157,6 @@ h2 {
   position: relative;
 }
 
-/* Adaptations mobiles pour les colonnes */
-@media (max-width: 768px) {
-  .form-columns .form-left,
-  .form-columns .form-right {
-    min-width: 100%;
-    max-width: 100%;
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-columns .form-left,
-  .form-columns .form-right {
-    min-width: 100%;
-    max-width: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-}
-
-@media (max-width: 900px) {
-  .form-columns .form-right {
-    min-width: 320px;
-    max-width: 100%;
-  }
-}
 
 .form-separator {
   width: 1px;
@@ -310,16 +172,6 @@ h2 {
   gap: 10px;
   margin-bottom: 24px;
 }
-@media (max-width: 900px) {
-  .creneaux-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 600px) {
-  .creneaux-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 .app-layout {
   display: grid;
@@ -330,16 +182,6 @@ h2 {
   min-height: 100vh;
 }
 
-@media (max-width: 1200px) {
-  .app-layout {
-    grid-template-areas:
-      "header"
-      "nav"
-      "content";
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr;
-  }
-}
 
 .header-area {
   grid-area: header;
@@ -351,47 +193,16 @@ h2 {
   grid-area: content;
 }
 
-/* Sépateur responsive */
-@media (max-width: 768px) {
-  .form-separator {
-    display: block;
-    width: 90%;
-    height: 1px;
-    background: var(--wcs-semantic-color-border-default, #ddd);
-    margin: 16px auto;
-    min-height: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-separator {
-    width: 100%;
-    margin: 8px auto;
-  }
-}
-
-@media (max-width: 1700px) {
-  .form-columns {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80vh;
-  }
-  .form-separator {
-    display: block;
-    width: 80%;
-    height: 1px;
-    background: var(--wcs-semantic-color-border-default, #ddd);
-    margin: 24px auto;
-    min-height: 0;
-    align-self: center;
-  }
-}
 
 /* Augmentation de la taille des textes de la nav bar x1.25 */
 wcs-nav-item {
   --wcs-nav-item-font-size-desktop: calc(var(--wcs-semantic-font-size-label-3) * 1.25);
   --wcs-nav-item-font-size-mobile: calc(calc(var(--wcs-semantic-font-size-body-1) / 2) * 1.25);
+  --wcs-nav-item-height-mobile: 40px;
+  --wcs-nav-item-gap-mobile: 8px;
+  padding-block: 10px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Augmentation de la taille du titre du header x1.25 */
@@ -429,4 +240,221 @@ wcs-form-field {
 .gestion-container p {
   text-align: center;
   padding-bottom: 50px;
+}
+
+/* Style pour la navigation secondaire dans la page Admin */
+.admin-nav-secondary {
+  background-color: var(--wcs-semantic-color-background-surface-body);
+  border-bottom: 1px solid var(--wcs-semantic-color-border-default);
+  padding: 16px 20px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* ============================================ */
+/* MEDIA QUERIES - RESPONSIVE DESIGN */
+/* ============================================ */
+
+/* Large screens (1700px et moins) */
+@media (max-width: 1700px) {
+  .form-columns {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+  }
+  .form-separator {
+    display: block;
+    width: 80%;
+    height: 1px;
+    background: var(--wcs-semantic-color-border-default, #ddd);
+    margin: 24px auto;
+    min-height: 0;
+    align-self: center;
+  }
+}
+
+/* Desktop et tablettes (1200px et moins) */
+@media (max-width: 1200px) {
+  .app-layout {
+    grid-template-areas:
+      "header"
+      "nav"
+      "content";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+  wcs-nav-item {
+    flex-direction: row;
+    padding-block: 0;
+  }
+}
+
+/* Tablettes (1199px et moins) */
+@media (max-width: 1199px) {
+    wcs-nav-item a, wcs-nav-item button {
+        display: flex;
+        flex: 1;
+        height: var(--wcs-nav-item-height-mobile);
+        gap: var(--wcs-nav-item-gap-mobile);
+        font-size: var(--wcs-nav-item-font-size-mobile);
+        flex-direction: row;
+    }
+  .admin-nav-secondary {
+    flex-direction: column;
+  }
+  .form-columns{
+
+  }
+}
+
+/* Tablettes moyennes (900px et moins) */
+@media (max-width: 900px) {
+  .form-columns .form-right {
+    min-width: 320px;
+    max-width: 100%;
+  }
+  .creneaux-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablettes (768px et moins) */
+@media (max-width: 768px) {
+  .main-content {
+    width: 95%;
+    margin: 0 auto;
+    padding-inline: 20px;
+    box-sizing: border-box;
+  }
+  
+  .form-columns {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .form-columns .form-left,
+  .form-columns .form-right {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .form-separator {
+    display: block;
+    width: 90%;
+    height: 1px;
+    background: var(--wcs-semantic-color-border-default, #ddd);
+    margin: 16px auto;
+    min-height: 0;
+  }
+  
+  wcs-header [slot="actions"] {
+    margin-left: auto;
+    max-width: 120px;
+    overflow: hidden;
+  }
+
+  wcs-header [slot="actions"] wcs-button {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    font-size: 0.85rem;
+  }
+}
+
+/* Petites tablettes (600px et moins) */
+@media (max-width: 600px) {
+  .main-content {
+    width: 100%;
+    margin: 0 auto;
+    padding-inline: 16px;
+    box-sizing: border-box;
+  }
+  
+  .creneaux-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobiles (480px et moins) */
+@media (max-width: 480px) {
+  .main-content {
+    width: 100%;
+    margin: 0 auto;
+    padding-inline: 8px;
+    box-sizing: border-box;
+  }
+
+  /* Ajustements spécifiques pour GestionPage */
+  .gestion-container {
+    padding: 20px 8px !important;
+    box-sizing: border-box;
+  }
+
+  /* Adaptations pour les boutons mobiles */
+  wcs-button-group {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  wcs-button {
+    min-width: 0 !important;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* Tables responsive */
+  table {
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    padding: 4px 8px !important;
+  }
+
+  /* Fix pour les boutons qui dépassent */
+  .header-area, .nav-area, .content-area {
+    overflow-x: hidden;
+  }
+
+  body, html {
+    overflow-x: hidden;
+  }
+  
+  .form-columns {
+    gap: 8px;
+    padding: 0;
+  }
+  
+  .form-columns .form-left,
+  .form-columns .form-right {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .form-separator {
+    width: 100%;
+    margin: 8px auto;
+  }
+  
+  wcs-header [slot="actions"] {
+    max-width: 100px;
+  }
+
+  wcs-header [slot="actions"] wcs-button {
+    font-size: 0.75rem;
+    padding: 0 8px !important;
+  }
+
+  wcs-header [slot="actions"] wcs-icon {
+    display: none;
+  }
 }
