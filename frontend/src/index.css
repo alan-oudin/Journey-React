@@ -135,6 +135,7 @@ h2 {
   }
 }
 
+
 /* Fix spécifique pour le bouton connexion dans le header slot */
 @media (max-width: 768px) {
   wcs-header [slot="actions"] {

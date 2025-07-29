@@ -717,6 +717,125 @@ try {
             }
             break;
 
+        case 'admins':
+            // Vérifier l'authentification pour les routes admin
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? '';
+            
+            if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token d\'authentification requis']);
+                return;
+            }
+            
+            $token = $matches[1];
+            try {
+                $payload = json_decode(base64_decode($token), true);
+                if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                    throw new Exception('Token expiré');
+                }
+                
+                $stmt = $pdo->prepare("SELECT id, role FROM admins WHERE id = ? AND username = ?");
+                $stmt->execute([$payload['sub'], $payload['username']]);
+                $currentUser = $stmt->fetch();
+                
+                if (!$currentUser) {
+                    throw new Exception('Utilisateur non trouvé');
+                }
+            } catch (Exception $e) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token invalide']);
+                return;
+            }
+            
+            if ($method === 'GET') {
+                // Lister tous les administrateurs
+                $stmt = $pdo->query("
+                    SELECT id, username, role, created_at, updated_at 
+                    FROM admins 
+                    ORDER BY created_at DESC
+                ");
+                $admins = $stmt->fetchAll();
+                echo json_encode($admins);
+                
+            } elseif ($method === 'POST') {
+                // Ajouter un nouvel administrateur
+                $input = json_decode(file_get_contents('php://input'), true);
+                
+                if (!$input || !isset($input['username']) || !isset($input['password'])) {
+                    throw new Exception('Nom d\'utilisateur et mot de passe requis');
+                }
+                
+                // Vérifier que l'utilisateur n'existe pas déjà
+                $stmt = $pdo->prepare("SELECT id FROM admins WHERE username = ?");
+                $stmt->execute([$input['username']]);
+                if ($stmt->fetch()) {
+                    throw new Exception('Un utilisateur avec ce nom existe déjà');
+                }
+                
+                $role = $input['role'] ?? 'admin';
+                if (!in_array($role, ['admin', 'super-admin'])) {
+                    throw new Exception('Rôle invalide');
+                }
+                
+                // Hacher le mot de passe
+                $hashedPassword = password_hash($input['password'], PASSWORD_DEFAULT);
+                
+                // Insérer le nouvel administrateur
+                $stmt = $pdo->prepare("
+                    INSERT INTO admins (username, password, role) 
+                    VALUES (?, ?, ?)
+                ");
+                $stmt->execute([$input['username'], $hashedPassword, $role]);
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Administrateur ajouté avec succès',
+                    'id' => $pdo->lastInsertId()
+                ]);
+                
+            } elseif ($method === 'DELETE') {
+                // Supprimer un administrateur
+                $adminId = $_GET['id'] ?? '';
+                if (empty($adminId)) {
+                    throw new Exception('ID de l\'administrateur manquant');
+                }
+                
+                // Empêcher la suppression de l'admin par défaut (ID 1)
+                if ($adminId == 1) {
+                    throw new Exception('Impossible de supprimer l\'administrateur par défaut');
+                }
+                
+                // Empêcher de se supprimer soi-même
+                if ($adminId == $currentUser['id']) {
+                    throw new Exception('Vous ne pouvez pas supprimer votre propre compte');
+                }
+                
+                // Vérifier que l'admin existe
+                $stmt = $pdo->prepare("SELECT username FROM admins WHERE id = ?");
+                $stmt->execute([$adminId]);
+                $admin = $stmt->fetch();
+                
+                if (!$admin) {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Administrateur non trouvé']);
+                    return;
+                }
+                
+                // Supprimer l'administrateur
+                $stmt = $pdo->prepare("DELETE FROM admins WHERE id = ?");
+                $stmt->execute([$adminId]);
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Administrateur {$admin['username']} supprimé avec succès"
+                ]);
+                
+            } else {
+                throw new Exception('Méthode non autorisée pour /admins');
+            }
+            break;
+
         default:
             // Page d'accueil de l'API avec documentation complète
             echo json_encode([

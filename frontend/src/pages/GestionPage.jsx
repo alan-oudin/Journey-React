@@ -64,28 +64,12 @@ export default function GestionPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const timeoutRefs = useRef({});
 
-  // Fonction pour gérer les timeouts automatiques des alertes
-  const setAlertWithTimeout = useCallback((field, alertData, timeout = 5000) => {
-    // Annuler le timeout précédent pour ce champ s'il existe
-    if (timeoutRefs.current[field]) {
-      clearTimeout(timeoutRefs.current[field]);
-    }
-    
-    // Mettre à jour l'alerte
+  // Fonction pour définir les alertes (sans timeout JavaScript)
+  const setAlert = useCallback((field, alertData) => {
     setFieldAlerts(prev => ({
       ...prev,
       [field]: alertData
     }));
-    
-    // Programmer la suppression automatique
-    timeoutRefs.current[field] = setTimeout(() => {
-      setFieldAlerts(prev => {
-        const newAlerts = {...prev};
-        delete newAlerts[field];
-        return newAlerts;
-      });
-      delete timeoutRefs.current[field];
-    }, timeout);
   }, []);
 
   const fetchAgents = useCallback(() => {
@@ -95,13 +79,13 @@ export default function GestionPage() {
         setAgents(Array.isArray(data) ? data : []);
       })
       .catch(e => {
-        setAlertWithTimeout('fetch_error', {
+        setAlert('fetch_error', {
           message: e.message,
           type: 'error'
-        }, 8000);
+        });
       })
       .finally(() => setLoading(false));
-  }, [setAlertWithTimeout]);
+  }, [setAlert]);
 
   const fetchStats = () => {
     apiGet('stats')
@@ -159,24 +143,24 @@ export default function GestionPage() {
       const response = await fetch(url, { method: 'DELETE' });
       const data = await response.json();
       if (data.success) {
-        setAlertWithTimeout('success', {
+        setAlert('success', {
           message: 'Agent supprimé avec succès.',
           type: 'success'
-        }, 6000);
+        });
         fetchAgents();
         fetchStats();
         fetchCreneaux();
       } else {
-        setAlertWithTimeout('delete_error', {
+        setAlert('delete_error', {
           message: data.error || 'Erreur lors de la suppression',
           type: 'error'
-        }, 8000);
+        });
       }
     } catch (e) {
-      setAlertWithTimeout('delete_error', {
+      setAlert('delete_error', {
         message: e.message,
         type: 'error'
-      }, 8000);
+      });
     } finally {
       setLoading(false);
     }
@@ -197,24 +181,24 @@ export default function GestionPage() {
       const data = await response.json();
       
       if (data.success) {
-        setAlertWithTimeout('success', {
+        setAlert('success', {
           message: 'Statut modifié avec succès.',
           type: 'success'
-        }, 6000);
+        });
         fetchAgents();
         fetchStats();
         fetchCreneaux();
       } else {
-        setAlertWithTimeout('status_error', {
+        setAlert('status_error', {
           message: data.error || 'Erreur lors de la modification du statut',
           type: 'error'
-        }, 8000);
+        });
       }
     } catch (e) {
-      setAlertWithTimeout('status_error', {
+      setAlert('status_error', {
         message: e.message,
         type: 'error'
-      }, 8000);
+      });
     } finally {
       setLoading(false);
     }
@@ -264,26 +248,26 @@ export default function GestionPage() {
       const data = await response.json();
       
       if (data.success) {
-        setAlertWithTimeout('success', {
+        setAlert('success', {
           message: 'Note supprimée avec succès.',
           type: 'success'
-        }, 6000);
+        });
         fetchAgents();
         // Mettre à jour modalAgent si elle est ouverte
         if (modalAgent && modalAgent.code_personnel === agent.code_personnel) {
           setModalAgent(prev => ({ ...prev, note: null }));
         }
       } else {
-        setAlertWithTimeout('note_error', {
+        setAlert('note_error', {
           message: data.error || 'Erreur lors de la suppression de la note',
           type: 'error'
-        }, 8000);
+        });
       }
     } catch (e) {
-      setAlertWithTimeout('note_error', {
+      setAlert('note_error', {
         message: 'Erreur de connexion au serveur',
         type: 'error'
-      }, 8000);
+      });
     } finally {
       setActionLoading(false);
     }
@@ -309,25 +293,25 @@ export default function GestionPage() {
       const data = await response.json();
       
       if (data.success) {
-        setAlertWithTimeout('success', {
+        setAlert('success', {
           message: noteMode === 'add' ? 'Note ajoutée avec succès.' : 'Note modifiée avec succès.',
           type: 'success'
-        }, 6000);
+        });
         setShowNoteModal(false);
         fetchAgents();
         // Mettre à jour modalAgent
         setModalAgent(prev => ({ ...prev, note: noteText.trim() }));
       } else {
-        setAlertWithTimeout('note_error', {
+        setAlert('note_error', {
           message: data.error || 'Erreur lors de la sauvegarde de la note',
           type: 'error'
-        }, 8000);
+        });
       }
     } catch (e) {
-      setAlertWithTimeout('note_error', {
+      setAlert('note_error', {
         message: 'Erreur de connexion au serveur',
         type: 'error'
-      }, 8000);
+      });
     } finally {
       setActionLoading(false);
     }
@@ -345,32 +329,32 @@ export default function GestionPage() {
       <p>Journée des Proches - Vue d'ensemble et administration</p>
 
       {/* Alertes WCS */}
-      {Object.keys(fieldAlerts).map(field => (
-        <wcs-alert 
-          key={field} 
-          intent={fieldAlerts[field].type === 'success' ? 'success' : 'error'} 
-          show 
-          style={{
-            marginBottom: 16,
-            ...(fieldAlerts[field].type === 'success' && {
-              borderLeft: '4px solid #28a745',
-              backgroundColor: '#d4edda'
-            })
-          }}
-        >
-          <span slot="title">
-            {fieldAlerts[field].type === 'success' ? '✅ ' : '❌ '}
-            {fieldAlerts[field].message}
-          </span>
-          <wcs-button 
-            slot="action" 
-            shape="clear" 
-            onClick={() => closeAlert(field)}
+      <wcs-alert-drawer>
+        {Object.keys(fieldAlerts).map(field => (
+          <wcs-alert 
+            key={field} 
+            intent={fieldAlerts[field].type === 'success' ? 'success' : 'error'} 
+            show={true}
+            timeout={5000}
+            show-progress-bar={true}
+            style={{ marginBottom: 16 }}
           >
-            Fermer
-          </wcs-button>
-        </wcs-alert>
-      ))}
+            <span slot="title">
+              {fieldAlerts[field].type === 'success' ? 'Succès' : 'Erreur'}
+            </span>
+            <span slot="subtitle">
+              {fieldAlerts[field].message}
+            </span>
+            <wcs-button 
+              slot="action" 
+              shape="clear" 
+              onClick={() => closeAlert(field)}
+            >
+              Fermer
+            </wcs-button>
+          </wcs-alert>
+        ))}
+      </wcs-alert-drawer>
 
       {loading && <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>}
 
