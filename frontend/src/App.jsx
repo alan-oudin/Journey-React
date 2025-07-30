@@ -7,6 +7,7 @@ import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import { AlertDrawerProvider } from './contexts/AlertContext.tsx';
 import { defineCustomElements } from 'wcs-react';
 import './index.css';
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
             </Routes>
           </main>
+          <div className="footer-area"><Footer /></div>
         </div>
       </Router>
     </AlertDrawerProvider>

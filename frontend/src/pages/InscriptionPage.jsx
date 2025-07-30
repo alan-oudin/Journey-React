@@ -436,6 +436,7 @@ export default function InscriptionPage() {
             </div>
           </div>
         </div>
+        
         <wcs-button type="submit" color="primary" shape="block" disabled={loading} style={{marginTop: 100,width: '100%'}}>
           {loading ? <wcs-spinner size="small"></wcs-spinner> : "S'inscrire"}
         </wcs-button>
