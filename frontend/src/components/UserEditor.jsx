@@ -39,6 +39,7 @@ export default function UserEditor() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const statutSelectRef = useRef(null);
+  const checkboxRestaurationRef = useRef(null);
 
   const showAlert = useCallback((message, type = 'info') => {
     const id = Date.now();
@@ -268,6 +269,30 @@ export default function UserEditor() {
     }
   }, [editMode, selectedAgent]);
 
+  // Gérer les événements de la checkbox de restauration
+  useEffect(() => {
+    const checkboxElement = checkboxRestaurationRef.current;
+    if (checkboxElement && editMode) {
+      const handleWcsChangeEvent = (event) => {
+        setEditForm(prev => ({ ...prev, restauration_sur_place: event.detail.checked }));
+      };
+      
+      checkboxElement.addEventListener('wcsChange', handleWcsChangeEvent);
+      
+      return () => {
+        checkboxElement.removeEventListener('wcsChange', handleWcsChangeEvent);
+      };
+    }
+  }, [editMode, selectedAgent]);
+
+  // Synchroniser la checkbox WCS avec l'état React
+  useEffect(() => {
+    const checkboxElement = checkboxRestaurationRef.current;
+    if (checkboxElement) {
+      checkboxElement.checked = editMode ? editForm.restauration_sur_place : (selectedAgent?.restauration_sur_place === 1 || selectedAgent?.restauration_sur_place === '1' || selectedAgent?.restauration_sur_place === true);
+    }
+  }, [editMode, editForm.restauration_sur_place, selectedAgent]);
+
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -451,8 +476,8 @@ export default function UserEditor() {
           <div style={{ marginTop: '16px' }}>
             <wcs-form-field>
               <wcs-checkbox
+                ref={checkboxRestaurationRef}
                 checked={editMode ? editForm.restauration_sur_place : (selectedAgent.restauration_sur_place === 1 || selectedAgent.restauration_sur_place === '1' || selectedAgent.restauration_sur_place === true)}
-                onWcsChange={(e) => editMode && setEditForm(prev => ({ ...prev, restauration_sur_place: e.detail.checked }))}
                 disabled={!editMode}
               >
                 Intéressé(e) par la restauration sur place

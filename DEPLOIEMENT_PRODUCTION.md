@@ -44,20 +44,45 @@ composer install --no-dev --optimize-autoloader
    mysql -u username -p database_name < backend/database/localhost_journee_proches.sql
    ```
 
-#### B. Configuration API (backend/public/api.php)
-Modifier les paramètres de connexion à la base de données :
-```php
-// Paramètres de production
-$host = 'localhost'; // ou l'IP de votre serveur MySQL
-$dbname = 'nom_de_votre_base_prod';
-$username = 'utilisateur_prod';
-$password = 'mot_de_passe_securise';
+#### B. Configuration des Variables d'Environnement
+Modifiez le fichier `backend/.env.production` :
+```bash
+# Configuration de la base de données de production
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=journee_proches_prod
+DB_USER=utilisateur_prod
+DB_PASSWORD=mot_de_passe_securise
+
+# Configuration générale
+APP_ENV=production
+APP_DEBUG=false
+
+# CORS (ajustez selon votre domaine)
+CORS_ORIGIN=https://votre-domaine.com
 ```
 
-#### C. Configuration des URLs Frontend
-Dans les fichiers React, mettre à jour les URLs de l'API :
-- Remplacer `http://localhost:8080/journeyV2/backend/public/api.php`
-- Par `https://votre-domaine.com/api/api.php`
+#### C. Configuration des Environnements
+Le système utilise maintenant une configuration automatique basée sur l'environnement :
+
+**Frontend :**
+- `.env.development` : Configuration automatique en développement
+- `.env.production` : Configuration automatique en production  
+- Les URLs d'API sont configurées automatiquement selon `NODE_ENV`
+- Logging de debug automatiquement désactivé en production
+
+**Backend :**
+- `.env.development` : Base de données et CORS pour le développement
+- `.env.production` : Configuration sécurisée pour la production
+- Détection automatique de l'environnement basée sur l'hôte
+- Gestion des erreurs adaptée à l'environnement
+
+**Avantages :**
+- ✅ Plus besoin de modifier manuellement les URLs lors du déploiement
+- ✅ Configuration CORS automatique selon l'environnement
+- ✅ Debug désactivé automatiquement en production
+- ✅ Timeouts d'API adaptés à l'environnement
+- ✅ Séparation claire entre développement et production
 
 ### 3. Déploiement sur le Serveur
 
@@ -66,7 +91,6 @@ Dans les fichiers React, mettre à jour les URLs de l'API :
 /var/www/html/votre-site/
 ├── api/
 │   ├── api.php
-│   ├── send-registration-mail.php
 │   └── vendor/
 ├── index.html (du build React)
 ├── static/
@@ -80,6 +104,7 @@ Dans les fichiers React, mettre à jour les URLs de l'API :
 1. **Frontend** : Copier tout le contenu du dossier `frontend/build/` vers la racine web
 2. **Backend** : Copier le contenu de `backend/public/` vers le dossier `api/`
 3. **Dépendances** : Copier le dossier `backend/vendor/` vers `api/vendor/`
+4. **Configuration** : Copier le fichier `backend/.env.production` vers `api/.env.production`
 
 #### C. Permissions des Fichiers
 ```bash
@@ -173,7 +198,6 @@ sudo certbot --apache -d votre-domaine.com
 - [ ] Inscription d'un nouvel agent fonctionne
 - [ ] Connexion admin fonctionne
 - [ ] Modification des utilisateurs fonctionne
-- [ ] Envoi d'emails fonctionne
 - [ ] Responsive design sur mobile
 - [ ] HTTPS actif et certificat valide
 

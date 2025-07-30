@@ -8,7 +8,6 @@ export default function InscriptionPage() {
     codePersonnel: '',
     nom: '',
     prenom: '',
-    email: '',
     nombreProches: '',
     heureArrivee: '',
     restaurationSurPlace: false
@@ -219,7 +218,7 @@ export default function InscriptionPage() {
         subtitle: 'Inscription réussie !',
         intent: 'success'
       });
-      setForm({ codePersonnel: '', nom: '', prenom: '', email: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
+      setForm({ codePersonnel: '', nom: '', prenom: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
       
       // Recharger les créneaux pour mettre à jour les indicateurs de places
       apiGet('creneaux')

@@ -7,26 +7,6 @@ SUPPRESSION DU CHAMP SERVICE
 ========================================
 */
 
-// Avant tout output
-header("Access-Control-Allow-Origin: http://localhost:3000");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
-
-// Si c'est une requête OPTIONS (préflight), on arrête ici
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Démarrer la capture de sortie pour éviter les problèmes de headers
-ob_start();
-
-// Désactiver l'affichage des erreurs en production
-error_reporting(0);
-ini_set('display_errors', 0);
-
-
 // Fonction pour charger les variables d'environnement depuis un fichier .env
 function loadEnv($path) {
     if (!file_exists($path)) {
@@ -61,11 +41,69 @@ function loadEnv($path) {
     return true;
 }
 
-// Charger les variables d'environnement
-$envFile = __DIR__ . '/../.env';
-if (!loadEnv($envFile)) {
-    error_log('Fichier .env non trouvé. Utilisation des valeurs par défaut.');
+// Détecter l'environnement et charger le bon fichier .env
+$environment = 'development';
+if (isset($_ENV['APP_ENV'])) {
+    $environment = $_ENV['APP_ENV'];
+} elseif (isset($_SERVER['HTTP_HOST'])) {
+    $host = $_SERVER['HTTP_HOST'];
+    // Extraire le hostname sans le port
+    $hostname = explode(':', $host)[0];
+    if (!in_array($hostname, ['localhost', '127.0.0.1']) && strpos($hostname, '.local') === false) {
+        $environment = 'production';
+    }
 }
+
+// Charger le fichier .env approprié
+$envFile = __DIR__ . "/../.env.$environment";
+if (!loadEnv($envFile)) {
+    $envFile = __DIR__ . '/../.env';
+    if (!loadEnv($envFile)) {
+        error_log('Aucun fichier .env trouvé. Utilisation des valeurs par défaut.');
+    }
+}
+
+// Configuration CORS basée sur l'environnement
+$corsOrigin = $_ENV['CORS_ORIGIN'] ?? getenv('CORS_ORIGIN') ?? 'http://localhost:3000';
+$appDebug = filter_var($_ENV['APP_DEBUG'] ?? getenv('APP_DEBUG') ?? true, FILTER_VALIDATE_BOOLEAN);
+
+// Log pour debugging
+if ($appDebug) {
+    error_log("Environment detected: $environment");
+    error_log("CORS Origin: $corsOrigin");
+    error_log("HTTP Host: " . ($_SERVER['HTTP_HOST'] ?? 'undefined'));
+}
+
+// Headers CORS
+header("Access-Control-Allow-Origin: $corsOrigin");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
+
+// Si c'est une requête OPTIONS (préflight), on arrête ici
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Si c'est une requête OPTIONS (préflight), on arrête ici
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Démarrer la capture de sortie pour éviter les problèmes de headers
+ob_start();
+
+// Configuration des erreurs basée sur l'environnement
+if ($appDebug) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+}
+
 
 // Configuration base de données
 $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? 'localhost';
