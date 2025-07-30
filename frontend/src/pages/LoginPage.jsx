@@ -8,13 +8,12 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // const [error, setError] = useState(''); // Non utilisé actuellement
   const navigate = useNavigate();
 
   const handleLogin = async e => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     try {
       const res = await apiPost('login', { username, password });
       if (res.success && res.token) {

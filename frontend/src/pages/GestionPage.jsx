@@ -103,8 +103,8 @@ export default function GestionPage() {
 
   // Cleanup des timeouts lors du démontage du composant
   useEffect(() => {
+    const currentTimeouts = timeoutRefs.current;
     return () => {
-      const currentTimeouts = timeoutRefs.current;
       Object.values(currentTimeouts).forEach(timeoutId => {
         clearTimeout(timeoutId);
       });

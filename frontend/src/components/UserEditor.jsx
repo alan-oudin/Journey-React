@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const STATUTS = [
   { value: 'inscrit', label: 'Inscrit' },
@@ -14,7 +14,7 @@ const creneauxApresMidi = [
   '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00', '15:20', '15:40'
 ];
 
-const allCreneaux = [...creneauxMatin, ...creneauxApresMidi];
+// const allCreneaux = [...creneauxMatin, ...creneauxApresMidi]; // Non utilisé actuellement
 
 export default function UserEditor() {
   const [agents, setAgents] = useState([]);
@@ -40,16 +40,16 @@ export default function UserEditor() {
   const [showHistory, setShowHistory] = useState(false);
   const statutSelectRef = useRef(null);
 
-  const showAlert = (message, type = 'info') => {
+  const showAlert = useCallback((message, type = 'info') => {
     const id = Date.now();
     const alert = { id, message, type };
     setAlerts(prev => [...prev, alert]);
     setTimeout(() => {
       setAlerts(prev => prev.filter(a => a.id !== id));
     }, 5000);
-  };
+  }, []);
 
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:8080/journeyV2/backend/public/api.php?path=agents', {
@@ -64,9 +64,9 @@ export default function UserEditor() {
     } catch (error) {
       showAlert('Erreur lors du chargement des agents', 'error');
     }
-  };
+  }, [showAlert]);
 
-  const fetchCreneaux = async () => {
+  const fetchCreneaux = useCallback(async () => {
     setLoadingCreneaux(true);
     try {
       const token = localStorage.getItem('token');
@@ -83,7 +83,7 @@ export default function UserEditor() {
     } finally {
       setLoadingCreneaux(false);
     }
-  };
+  }, [showAlert]);
 
   const fetchHistory = async (codePersonnel) => {
     setLoadingHistory(true);
@@ -243,14 +243,14 @@ export default function UserEditor() {
   useEffect(() => {
     fetchAgents();
     fetchCreneaux();
-  }, []);
+  }, [fetchAgents, fetchCreneaux]);
 
   // Rafraîchir les créneaux quand on entre en mode édition
   useEffect(() => {
     if (editMode && selectedAgent) {
       fetchCreneaux();
     }
-  }, [editMode, selectedAgent]);
+  }, [editMode, selectedAgent, fetchCreneaux]);
 
   // Gérer les événements du select de statut
   useEffect(() => {

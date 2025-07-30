@@ -1,8 +1,7 @@
 import React from 'react';
-import {NavLink, useLocation} from 'react-router-dom';
+import {NavLink} from 'react-router-dom';
 
 export default function Navbar() {
-    const location = useLocation();
     const isAuthenticated = !!localStorage.getItem('token');
 
     return (

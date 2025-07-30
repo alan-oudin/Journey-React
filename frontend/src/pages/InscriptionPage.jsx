@@ -16,8 +16,8 @@ export default function InscriptionPage() {
   const [loading, setLoading] = useState(false);
   const [creneaux, setCreneaux] = useState({ matin: {}, 'apres-midi': {} });
   const [loadingCreneaux, setLoadingCreneaux] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showInfoAlert, setShowInfoAlert] = useState(true);
+  // const [isAuthenticated, setIsAuthenticated] = useState(false); // Non utilisé actuellement
+  // const [showInfoAlert, setShowInfoAlert] = useState(true); // Non utilisé actuellement
   const selectRef = useRef(null);
   const checkboxRef = useRef(null);
 
@@ -57,19 +57,7 @@ export default function InscriptionPage() {
       .catch(() => setCreneaux({ matin: {}, 'apres-midi': {} }))
       .finally(() => setLoadingCreneaux(false));
     
-    // Vérifier l'état d'authentification
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      setIsAuthenticated(!!token);
-    };
-    
-    checkAuth();
-    // Écouter les changements du localStorage
-    window.addEventListener('storage', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-    };
+    // Code pour vérifier l'authentification supprimé car non utilisé
   }, []);
 
   useEffect(() => {

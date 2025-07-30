@@ -7,7 +7,7 @@ export default function RecherchePage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [agentTrouve, setAgentTrouve] = useState(null);
-    const [error, setError] = useState('');
+    // const [error, setError] = useState(''); // Non utilisé actuellement
     const [actionLoading, setActionLoading] = useState(false);
     const [showNoteModal, setShowNoteModal] = useState(false);
     const [noteText, setNoteText] = useState('');
@@ -16,7 +16,6 @@ export default function RecherchePage() {
     const handleSearch = async value => {
         setSearchTerm(value);
         setAgentTrouve(null);
-        setError('');
         const regexCP = /^\d{7}[A-Z]$/;
         if (!value || !regexCP.test(value)) return;
         setLoading(true);

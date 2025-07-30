@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export default function AdminManagement() {
   const [admins, setAdmins] = useState([]);
@@ -7,16 +7,16 @@ export default function AdminManagement() {
   const [newAdmin, setNewAdmin] = useState({ username: '', password: '', role: 'admin' });
   const [alerts, setAlerts] = useState([]);
 
-  const showAlert = (message, type = 'info') => {
+  const showAlert = useCallback((message, type = 'info') => {
     const id = Date.now();
     const alert = { id, message, type };
     setAlerts(prev => [...prev, alert]);
     setTimeout(() => {
       setAlerts(prev => prev.filter(a => a.id !== id));
     }, 5000);
-  };
+  }, []);
 
-  const fetchAdmins = async () => {
+  const fetchAdmins = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -34,7 +34,7 @@ export default function AdminManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showAlert]);
 
   const handleAddAdmin = async (e) => {
     e.preventDefault();
@@ -100,7 +100,7 @@ export default function AdminManagement() {
 
   useEffect(() => {
     fetchAdmins();
-  }, []);
+  }, [fetchAdmins]);
 
   return (
     <div style={{ padding: '20px' }}>
