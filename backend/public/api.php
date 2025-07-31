@@ -7,6 +7,18 @@ SUPPRESSION DU CHAMP SERVICE
 ========================================
 */
 
+// Définir les en-têtes CORS dès le début du script
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
+
+// Si c'est une requête OPTIONS (préflight), on arrête ici
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 // Fonction pour charger les variables d'environnement depuis un fichier .env
 function loadEnv($path) {
     if (!file_exists($path)) {
@@ -64,33 +76,27 @@ if (!loadEnv($envFile)) {
 }
 
 // Configuration CORS basée sur l'environnement
+// En production, accepter les requêtes de tmtercvdl.sncf.fr
+// En développement, accepter les requêtes de localhost:3000
 $corsOrigin = $_ENV['CORS_ORIGIN'] ?? getenv('CORS_ORIGIN') ?? 'http://localhost:3000';
+
+// Si l'origine de la requête est https://tmtercvdl.sncf.fr, l'autoriser explicitement
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($requestOrigin === 'https://tmtercvdl.sncf.fr') {
+    $corsOrigin = 'https://tmtercvdl.sncf.fr';
+}
+
 $appDebug = filter_var($_ENV['APP_DEBUG'] ?? getenv('APP_DEBUG') ?? true, FILTER_VALIDATE_BOOLEAN);
 
 // Log pour debugging
 if ($appDebug) {
     error_log("Environment detected: $environment");
     error_log("CORS Origin: $corsOrigin");
+    error_log("Request Origin: $requestOrigin");
     error_log("HTTP Host: " . ($_SERVER['HTTP_HOST'] ?? 'undefined'));
 }
 
-// Headers CORS
-header("Access-Control-Allow-Origin: $corsOrigin");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
-
-// Si c'est une requête OPTIONS (préflight), on arrête ici
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Si c'est une requête OPTIONS (préflight), on arrête ici
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+// Les en-têtes CORS sont maintenant définis au début du script
 
 // Démarrer la capture de sortie pour éviter les problèmes de headers
 ob_start();

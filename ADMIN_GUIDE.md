@@ -23,6 +23,7 @@ Ce système d'administration vous permet de gérer les inscriptions et les admin
 
 ```bash
 # Dans le dossier backend
+cd backend
 php add_admin.php
 ```
 
@@ -66,9 +67,10 @@ VALUES (
 - **Accessible à tous**
 
 ### 🔒 Pages protégées (Authentification requise)
-- **Gestion** (`/gestion`) : Vue d'ensemble et administration des inscriptions
+- **Administration** (`/admin`) : Panneau d'administration complet avec onglets
+  - Onglet **Gestion** : Vue d'ensemble et administration des inscriptions
+  - Onglet **Administrateurs** : Gestion des comptes admin
 - **Recherche** (`/recherche`) : Recherche d'agents inscrits
-- **Administration** (`/admin`) : Panneau d'administration complet
 
 ## Fonctionnalités de l'administration
 

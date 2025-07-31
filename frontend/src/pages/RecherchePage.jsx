@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {apiGet} from '../api';
+import {apiGet, apiPost} from '../api';
 import { useAlertDrawer } from '../contexts/AlertContext.tsx';
 
 export default function RecherchePage() {
@@ -41,16 +41,11 @@ export default function RecherchePage() {
         
         setActionLoading(true);
         try {
-            const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-            url.searchParams.append('path', 'agents');
-            url.searchParams.append('code', agentTrouve.code_personnel);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statut: nouveauStatut })
+            const data = await apiPost('agents', {
+                code: agentTrouve.code_personnel,
+                _method: 'PUT',
+                statut: nouveauStatut
             });
-            const data = await response.json();
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, statut: nouveauStatut }));
@@ -73,7 +68,7 @@ export default function RecherchePage() {
         } catch (e) {
             showAlert({
                 title: 'Erreur',
-                subtitle: 'Erreur de connexion au serveur',
+                subtitle: e.message || 'Erreur de connexion au serveur',
                 intent: 'error',
                 showProgressBar: true,
                 timeout: 5000
@@ -106,16 +101,11 @@ export default function RecherchePage() {
         
         setActionLoading(true);
         try {
-            const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-            url.searchParams.append('path', 'agents');
-            url.searchParams.append('code', agentTrouve.code_personnel);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note: null })
+            const data = await apiPost('agents', {
+                code: agentTrouve.code_personnel,
+                _method: 'PUT',
+                note: null
             });
-            const data = await response.json();
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, note: null }));
@@ -138,7 +128,7 @@ export default function RecherchePage() {
         } catch (e) {
             showAlert({
                 title: 'Erreur',
-                subtitle: 'Erreur de connexion au serveur',
+                subtitle: e.message || 'Erreur de connexion au serveur',
                 intent: 'error',
                 showProgressBar: true,
                 timeout: 5000
@@ -156,16 +146,11 @@ export default function RecherchePage() {
         
         setActionLoading(true);
         try {
-            const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-            url.searchParams.append('path', 'agents');
-            url.searchParams.append('code', agentTrouve.code_personnel);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note: noteText.trim() })
+            const data = await apiPost('agents', {
+                code: agentTrouve.code_personnel,
+                _method: 'PUT',
+                note: noteText.trim()
             });
-            const data = await response.json();
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, note: noteText.trim() }));
@@ -189,7 +174,7 @@ export default function RecherchePage() {
         } catch (e) {
             showAlert({
                 title: 'Erreur',
-                subtitle: 'Erreur de connexion au serveur',
+                subtitle: e.message || 'Erreur de connexion au serveur',
                 intent: 'error',
                 showProgressBar: true,
                 timeout: 5000

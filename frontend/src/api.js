@@ -1,7 +1,14 @@
 // Utilitaire pour appeler l'API PHP
 import { ENV_CONFIG, devLog } from './config/environment';
 
-const API_BASE = process.env.REACT_APP_API_URL || ENV_CONFIG.API_BASE_URL;
+// Utiliser l'URL de production en environnement de production
+// ou l'URL de développement en environnement de développement
+const API_BASE = ENV_CONFIG.API_BASE_URL;
+
+// Debug pour identifier le problème
+console.log('DEBUG - Environment:', process.env.NODE_ENV);
+console.log('DEBUG - ENV_CONFIG.API_BASE_URL:', ENV_CONFIG?.API_BASE_URL);
+console.log('DEBUG - API_BASE final:', API_BASE);
 
 export async function apiGet(path = '', params = {}) {
   const url = new URL(API_BASE);
@@ -10,8 +17,15 @@ export async function apiGet(path = '', params = {}) {
   
   devLog(`GET ${url.toString()}`);
   
+  const headers = {};
+  const token = localStorage.getItem('token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
   const response = await fetch(url, { 
     credentials: 'include',
+    headers,
     signal: AbortSignal.timeout(ENV_CONFIG.API_TIMEOUT)
   });
   

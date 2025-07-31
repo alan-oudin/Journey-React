@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { apiGet, apiPost } from '../api';
 
 export default function AdminManagement() {
   const [admins, setAdmins] = useState([]);
@@ -19,13 +20,7 @@ export default function AdminManagement() {
   const fetchAdmins = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/journeyV2/backend/public/api.php?path=admins', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await apiGet('admins');
       if (Array.isArray(data)) {
         setAdmins(data);
       }
@@ -45,17 +40,7 @@ export default function AdminManagement() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/journeyV2/backend/public/api.php?path=admins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newAdmin)
-      });
-      
-      const data = await response.json();
+      const data = await apiPost('admins', newAdmin);
       if (data.success) {
         showAlert('Administrateur ajouté avec succès', 'success');
         setNewAdmin({ username: '', password: '', role: 'admin' });
@@ -76,15 +61,7 @@ export default function AdminManagement() {
     
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/journeyV2/backend/public/api.php?path=admins&id=${adminId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      const data = await response.json();
+      const data = await apiGet('admins', { id: adminId, _method: 'DELETE' });
       if (data.success) {
         showAlert('Administrateur supprimé avec succès', 'success');
         fetchAdmins();

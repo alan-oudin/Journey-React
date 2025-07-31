@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiGet } from '../api';
 
 export default function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,14 +19,7 @@ export default function ProtectedRoute({ children }) {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/journeyV2/backend/public/api.php?path=verify-token', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
+      const data = await apiGet('verify-token');
       
       if (data.valid) {
         setIsAuthenticated(true);

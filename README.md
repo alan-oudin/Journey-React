@@ -1,77 +1,160 @@
-# JourneyV2 - Application Journée des Proches
+# Journey - Application Journée des Proches
 
-## Architecture du projet
+Application web moderne pour la gestion des inscriptions à la journée des proches SNCF.
+
+## 📁 Architecture du projet
 
 ```
-journeyV2/
-├── frontend/         # Application React (interface utilisateur)
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   └── ...
-├── backend/          # API PHP/MySQL (logique métier, accès DB)
-│   ├── public/
-│   │   ├── api.php
-│   │   └── ...
+journey/
+├── README.md                    # Documentation principale
+├── ADMIN_GUIDE.md              # Guide administrateur  
+├── DEPLOIEMENT_PRODUCTION.md   # Guide de déploiement
+├── ENVIRONMENTS.md             # Configuration multi-environnements
+├── STRUCTURE_CLEAN.md          # Documentation de l'architecture
+├── api-test.js                 # Script de test de l'API
+├── switch-env.bat/sh           # Scripts d'information environnements
+├── package.json                # Dependencies globales (node-fetch, wcs)
+│
+├── backend/                    # 🔧 API PHP + Base de données
+│   ├── .env.development        # Configuration WAMP (dev)
+│   ├── .env.production         # Configuration XAMPP (prod)
+│   ├── .env.example            # Exemple de configuration
+│   ├── add_admin.php           # Script CLI pour ajouter des admins
+│   ├── composer.json           # Dependencies PHP
+│   ├── vendor/                 # Packages Composer
 │   ├── database/
-│   ├── vendor/
-│   ├── composer.json
-│   └── ...
-├── README.md         # Documentation du projet
-└── .gitignore        # Fichiers/dossiers ignorés par git
+│   │   ├── localhost_journee_proches.sql  # Schema BDD
+│   │   └── import_database.bat           # Script d'import
+│   └── public/
+│       └── api.php             # API REST principale
+│
+└── frontend/                   # ⚛️ Application React
+    ├── package.json            # Dependencies React + WCS Design System
+    ├── build/                  # Build de production
+    ├── public/                 # Assets statiques
+    │   ├── index.html
+    │   ├── fonts/              # Polices Avenir SNCF
+    │   └── logo/               # Logo SNCF
+    └── src/                    # Code source
+        ├── index.js            # Point d'entrée
+        ├── App.jsx             # Composant racine
+        ├── api.js              # Client API
+        ├── config/
+        │   └── environment.js  # Configuration multi-environnements
+        ├── components/         # Composants réutilisables
+        ├── pages/              # Pages de l'application
+        └── contexts/           # Contextes React
 ```
 
-## Technologies utilisées
+## 🛠 Technologies utilisées
 
-- **Frontend** : React (Create React App)
-- **Backend** : PHP 7+ (API REST), MySQL
-- **Gestion des dépendances** : npm (frontend), Composer (backend)
+- **Frontend** : React 19, WCS Design System SNCF, React Router
+- **Backend** : PHP 7.4+, API REST, PDO MySQL
+- **Base de données** : MySQL 5.7+
+- **Environnements** : WAMP (dev) + XAMPP (prod)
+- **Build** : Create React App, Composer
 
-## Installation & Lancement
+## 🚀 Installation & Lancement
 
-### 1. Backend (PHP/MySQL)
+### Configuration Automatique Multi-Environnements
 
-1. Placer le dossier `backend/` dans un serveur compatible PHP (WAMP/XAMPP/LAMP...)
-2. Importer la base de données depuis `backend/database/localhost_journee_proches.sql`
-3. Configurer les accès DB dans `backend/public/api.php` ou via un fichier `.env`
-4. Accès API : `http://localhost/backend/public/api.php`
+Ce projet supporte automatiquement deux environnements :
+- **🟢 DEV** : WAMP local (`localhost:3000` + `localhost:8080`)  
+- **🔴 PROD** : XAMPP serveur (`tmtercvdl.sncf.fr` + `127.0.0.1`)
 
-### 2. Frontend (React)
+### 1. Installation Dependencies
 
-1. Aller dans le dossier `frontend/`
-2. Installer les dépendances :
-   ```bash
-   npm install
-   ```
-3. Lancer le serveur de développement :
-   ```bash
-   npm start
-   ```
-4. Accéder à l’interface : `http://localhost:3000`
+```bash
+# Installation globale (racine)
+npm install
 
-> **Astuce** : Modifier l’URL de l’API dans `frontend/src/api.js` si besoin (ex : pour pointer vers le backend en production).
+# Installation frontend
+cd frontend && npm install
 
-## Fonctionnalités principales
+# Installation backend  
+cd ../backend && composer install
+```
 
-- Inscription d’un agent avec choix du créneau (places limitées)
-- Connexion admin (gestion des statuts, suppression, export CSV)
-- Recherche rapide d’agent par code personnel
-- Statistiques avancées (présents, inscrits, absents, total personnes...)
-- Affichage et gestion des créneaux (matin/après-midi)
-- Export CSV des inscriptions
+### 2. Configuration Base de Données
 
-## Bonnes pratiques & sécurité
+```bash
+# Importer le schema
+mysql -u root -p < backend/database/localhost_journee_proches.sql
 
-- Les variables sensibles (DB, API) doivent être placées dans un fichier `.env` (non versionné)
-- Ne jamais exposer les identifiants de production dans le code source
-- Utiliser un utilisateur MySQL dédié avec droits limités
-- Sauvegarder régulièrement la base de données
+# Ou utiliser le script Windows
+backend/database/import_database.bat
+```
 
-## Déploiement
+### 3. Lancement Développement (WAMP)
 
-- **Backend** : déployer le dossier `backend/` sur un serveur PHP/MySQL
-- **Frontend** : déployer le build React (`frontend/build/`) sur un serveur web (Apache/Nginx...)
-- Adapter l’URL de l’API côté frontend si besoin
+```bash
+# Vérifier la configuration
+switch-env.bat dev
+
+# Lancer React
+cd frontend && npm start
+
+# API accessible sur : http://localhost:8080/journey/backend/public/api.php
+# Frontend accessible sur : http://localhost:3000
+```
+
+### 4. Build Production (XAMPP)
+
+```bash
+# Vérifier la configuration  
+switch-env.bat prod
+
+# Build React
+cd frontend && npm run build
+
+# Déployer les fichiers build/ sur le serveur XAMPP
+```
+
+> **✨ Configuration Automatique** : Les URLs d'API et paramètres CORS sont configurés automatiquement selon l'environnement détecté !
+
+## ⭐ Fonctionnalités principales
+
+### 👤 Espace Public
+- **Inscription agent** : Formulaire avec code personnel (7 chiffres + lettre)
+- **Choix créneau** : Sélection matin/après-midi avec places disponibles
+- **Gestion proches** : Nombre d'accompagnants (0 à 4)
+- **Restauration** : Option repas sur place
+
+### 🛡 Espace Admin (authentifié)
+- **Gestion agents** : Modification statuts, suppression, notes
+- **Recherche rapide** : Par code personnel
+- **Statistiques temps réel** : Inscrits, présents, absents, annulés
+- **Export CSV** : Données complètes pour traitement
+- **Gestion créneaux** : Vue globale matin/après-midi (14 places max)
+
+### 🔧 Fonctionnalités Techniques
+- **Multi-environnements** : Configuration automatique dev/prod
+- **API REST** : Endpoints complets avec authentification JWT
+- **Design System SNCF** : Interface cohérente avec WCS
+- **PWA Ready** : Service Worker pour utilisation offline
+- **Responsive** : Compatible mobile/tablette/desktop
+
+## 🔒 Sécurité & Configuration
+
+### Variables d'Environnement
+- **Development** : `.env.development` (WAMP localhost)
+- **Production** : `.env.production` (XAMPP serveur)
+- **CORS automatique** : Configuré selon l'environnement
+- **Base de données** : Credentials séparés par environnement
+
+### Sécurité
+- ✅ Validation côté serveur (codes personnels, capacités)
+- ✅ Authentification JWT pour l'admin
+- ✅ Protection CSRF et injection SQL (PDO prepared statements)
+- ✅ Logs et monitoring selon environnement
+- ✅ Fichiers sensibles protégés (.env exclus du versioning)
+
+## 📚 Documentation
+
+- **[ENVIRONMENTS.md](ENVIRONMENTS.md)** : Configuration des environnements
+- **[DEPLOIEMENT_PRODUCTION.md](DEPLOIEMENT_PRODUCTION.md)** : Guide de déploiement
+- **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** : Guide administrateur
+- **[STRUCTURE_CLEAN.md](STRUCTURE_CLEAN.md)** : Architecture détaillée
 
 ## Contribution
 

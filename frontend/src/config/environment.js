@@ -1,19 +1,27 @@
 // Configuration des environnements
 const config = {
   development: {
-    API_BASE_URL: 'http://localhost:8080/journeyV2/backend/public/api.php',
+    // Configuration DEV - WAMP local
+    API_BASE_URL: 'http://localhost:8080/journey/backend/public/api.php',
+    FRONTEND_URL: 'http://localhost:3000',
     API_TIMEOUT: 10000,
-    DEBUG: true
+    DEBUG: true,
+    ENVIRONMENT_NAME: 'Development (WAMP)'
   },
   production: {
-    API_BASE_URL: '/api/api.php',
+    // Configuration PROD - XAMPP sur serveur
+    API_BASE_URL: 'http://127.0.0.1/journey/backend/public/api.php',
+    FRONTEND_URL: 'https://tmtercvdl.sncf.fr/journey',
     API_TIMEOUT: 30000,
-    DEBUG: false
+    DEBUG: false,
+    ENVIRONMENT_NAME: 'Production (XAMPP)'
   },
   test: {
-    API_BASE_URL: 'http://localhost:8080/journeyV2/backend/public/api.php',
+    API_BASE_URL: 'http://localhost:8080/journey/backend/public/api.php',
+    FRONTEND_URL: 'http://localhost:3000',
     API_TIMEOUT: 5000,
-    DEBUG: true
+    DEBUG: true,
+    ENVIRONMENT_NAME: 'Test (WAMP)'
   }
 };
 

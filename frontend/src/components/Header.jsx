@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiGet } from '../api';
 
 export default function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -41,14 +42,7 @@ export default function Header() {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/journeyV2/backend/public/api.php?path=verify-token', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
+      const data = await apiGet('verify-token');
       
       if (data.valid) {
         setIsAuthenticated(true);
@@ -80,7 +74,7 @@ export default function Header() {
 
   return (
     <wcs-header>
-      <img slot="logo" alt="SNCF" src="/logo/Logo SNCF Voyageurs.png" />
+      <img slot="logo" alt="SNCF" src="./logo/Logo SNCF Voyageurs.png" />
       <h1 slot="title">Journée des Proches SNCF</h1>
       <div slot="actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {isAuthenticated ? (

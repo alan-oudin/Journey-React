@@ -1,256 +1,247 @@
-# Guide de Déploiement en Production - JourneyV2
+# Guide de Déploiement - Journey
 
-## 📋 Prérequis
+Application Journey avec configuration automatique multi-environnements.
 
-### Serveur de Production
-- **Serveur web** : Apache ou Nginx
-- **PHP** : Version 7.4 ou supérieure
-- **Base de données** : MySQL 5.7+ ou MariaDB 10.2+
-- **Node.js** : Version 16+ (pour le build du frontend)
-- **Accès SSH** au serveur de production
+## 🎯 Environnements Supportés
 
-### Outils de Développement
-- Git
-- Composer (pour les dépendances PHP)
-- npm ou yarn (pour les dépendances JavaScript)
+### 🟢 Développement (WAMP)
+**Configuration automatique via `.env.development`**
+- **Frontend** : `http://localhost:3000` (React dev server)
+- **Backend** : `http://localhost:8080/journey/backend/public/api.php`
+- **Base de données** : `localhost:3306` (WAMP MySQL)
+- **CORS** : Configuré pour `localhost:3000`
 
-## 🚀 Procédure de Déploiement
+### 🔴 Production (XAMPP)
+**Configuration automatique via `.env.production`**
+- **Frontend** : `https://tmtercvdl.sncf.fr/journey`
+- **Backend** : `http://127.0.0.1/journey/backend/public/api.php`
+- **Base de données** : `127.0.0.1:3306` (XAMPP MySQL)
+- **CORS** : Configuré pour `tmtercvdl.sncf.fr`
 
-### 1. Préparation de l'Environnement Local
+> **✨ Nouveau** : Plus besoin de modifier manuellement les URLs ! La configuration se fait automatiquement selon l'environnement détecté.
 
-#### A. Build du Frontend React
+---
+
+## 🚀 Déploiement XAMPP (Production)
+
+### 1. Préparation Locale
+
 ```bash
-# Depuis le répertoire racine du projet
+# Vérifier la configuration
+switch-env.bat prod
+
+# Build du frontend
 cd frontend
-npm install
 npm run build
-```
 
-Cette commande crée un dossier `build/` contenant les fichiers optimisés pour la production.
-
-#### B. Installation des Dépendances Backend
-```bash
-# Depuis le répertoire backend
-cd backend
+# Installer les dépendances backend (si pas fait)
+cd ../backend
 composer install --no-dev --optimize-autoloader
 ```
 
-### 2. Configuration de Production
+### 2. Structure de Déploiement
 
-#### A. Configuration de la Base de Données
-1. **Créer la base de données** sur le serveur de production
-2. **Importer le schéma** :
-   ```bash
-   mysql -u username -p database_name < backend/database/localhost_journee_proches.sql
-   ```
+**Fichiers à transférer vers XAMPP :**
+```
+C:\xampp\htdocs\journey\
+├── index.html                    # Depuis frontend/build/
+├── static/                       # Depuis frontend/build/static/
+├── fonts/                        # Depuis frontend/build/fonts/  
+├── logo/                         # Depuis frontend/build/logo/
+├── manifest.json                 # Depuis frontend/build/
+├── robots.txt                    # Depuis frontend/build/
+├── favicon.ico                   # Depuis frontend/build/
+└── backend/
+    ├── .env.production           # Configuration production
+    ├── public/
+    │   └── api.php               # API principale
+    ├── database/
+    │   └── localhost_journee_proches.sql
+    └── vendor/                   # Dépendances Composer
+```
 
-#### B. Configuration des Variables d'Environnement
-Modifiez le fichier `backend/.env.production` :
-```bash
-# Configuration de la base de données de production
-DB_HOST=localhost
+### 3. Configuration Automatique
+
+Les fichiers de configuration sont **automatiquement** utilisés :
+
+**Backend** (`.env.production`) :
+```env
+# Configuration PRODUCTION - XAMPP sur serveur
+DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_NAME=journee_proches_prod
-DB_USER=utilisateur_prod
-DB_PASSWORD=mot_de_passe_securise
-
-# Configuration générale
+DB_NAME=journee_proches
+DB_USER=root
+DB_PASSWORD=
 APP_ENV=production
 APP_DEBUG=false
-
-# CORS (ajustez selon votre domaine)
-CORS_ORIGIN=https://votre-domaine.com
+CORS_ORIGIN=https://tmtercvdl.sncf.fr
 ```
 
-#### C. Configuration des Environnements
-Le système utilise maintenant une configuration automatique basée sur l'environnement :
+**Frontend** : Configuration automatique dans `environment.js`
+- Détection automatique de `NODE_ENV=production`
+- URL API définie sur `http://127.0.0.1/journey/backend/public/api.php`
+- CORS automatiquement configuré
 
-**Frontend :**
-- `.env.development` : Configuration automatique en développement
-- `.env.production` : Configuration automatique en production  
-- Les URLs d'API sont configurées automatiquement selon `NODE_ENV`
-- Logging de debug automatiquement désactivé en production
+### 4. Base de Données
 
-**Backend :**
-- `.env.development` : Base de données et CORS pour le développement
-- `.env.production` : Configuration sécurisée pour la production
-- Détection automatique de l'environnement basée sur l'hôte
-- Gestion des erreurs adaptée à l'environnement
+```sql
+-- Créer/Importer la base
+mysql -u root -p < backend/database/localhost_journee_proches.sql
 
-**Avantages :**
-- ✅ Plus besoin de modifier manuellement les URLs lors du déploiement
-- ✅ Configuration CORS automatique selon l'environnement
-- ✅ Debug désactivé automatiquement en production
-- ✅ Timeouts d'API adaptés à l'environnement
-- ✅ Séparation claire entre développement et production
-
-### 3. Déploiement sur le Serveur
-
-#### A. Structure des Fichiers sur le Serveur
-```
-/var/www/html/votre-site/
-├── api/
-│   ├── api.php
-│   └── vendor/
-├── index.html (du build React)
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── media/
-└── fonts/
+-- Ou via phpMyAdmin
+-- http://127.0.0.1/phpmyadmin
 ```
 
-#### B. Upload des Fichiers
-1. **Frontend** : Copier tout le contenu du dossier `frontend/build/` vers la racine web
-2. **Backend** : Copier le contenu de `backend/public/` vers le dossier `api/`
-3. **Dépendances** : Copier le dossier `backend/vendor/` vers `api/vendor/`
-4. **Configuration** : Copier le fichier `backend/.env.production` vers `api/.env.production`
+### 5. Test de Déploiement
 
-#### C. Permissions des Fichiers
 ```bash
-# Sur le serveur, définir les bonnes permissions
-chmod -R 755 /var/www/html/votre-site/
-chmod -R 644 /var/www/html/votre-site/api/*.php
+# API
+curl http://127.0.0.1/journey/backend/public/api.php?path=test
+
+# Frontend
+# Ouvrir https://tmtercvdl.sncf.fr/journey
 ```
 
-### 4. Configuration du Serveur Web
+---
 
-#### A. Apache (.htaccess)
-Créer un fichier `.htaccess` à la racine :
+## 🌐 Déploiement Serveur Distant (Optionnel)
+
+### 1. Prérequis Serveur
+- Apache/Nginx avec PHP 7.4+
+- MySQL 5.7+
+- Certificat SSL (HTTPS)
+- Accès SSH
+
+### 2. Upload des Fichiers
+
+```bash
+# Structure sur le serveur
+/var/www/html/journey/
+├── index.html          # Build React
+├── static/             # Assets React
+├── backend/
+│   ├── .env.production # À adapter selon serveur
+│   └── public/api.php  # API
+└── vendor/             # Dependencies PHP
+```
+
+### 3. Configuration Serveur
+
+**Apache (.htaccess)** :
 ```apache
-RewriteEngine On
-
 # Gestion des routes React (SPA)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/api/
-RewriteRule . /index.html [L]
-
-# Configuration CORS pour l'API
-<IfModule mod_headers.c>
-    Header always set Access-Control-Allow-Origin "*"
-    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/journey/backend/
+    RewriteRule . /journey/index.html [L]
 </IfModule>
 
-# Gestion des requêtes OPTIONS
-RewriteCond %{REQUEST_METHOD} OPTIONS
-RewriteRule ^(.*)$ $1 [R=200,L]
+# Sécurité - Protection des fichiers sensibles
+<Files ".env*">
+    Order allow,deny
+    Deny from all
+</Files>
 ```
 
-#### B. Nginx
-Configuration dans le fichier de site Nginx :
-```nginx
-server {
-    listen 80;
-    server_name votre-domaine.com;
-    root /var/www/html/votre-site;
-    index index.html;
+> **Important** : CORS est géré automatiquement par `api.php` selon l'environnement détecté.
 
-    # Gestion des fichiers statiques
-    location /static/ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
+---
 
-    # API PHP
-    location /api/ {
-        try_files $uri $uri/ @php;
-    }
+## 🔧 Configuration Avancée
 
-    location @php {
-        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
-        fastcgi_index api.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root/api/api.php;
-    }
+### Variables d'Environnement
 
-    # React Router (SPA)
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
+**Modifier `.env.production` selon votre serveur :**
+```env
+# Base de données du serveur
+DB_HOST=127.0.0.1           # ou IP du serveur MySQL
+DB_NAME=journee_proches     # nom de votre BDD
+DB_USER=username            # utilisateur MySQL
+DB_PASSWORD=password        # mot de passe sécurisé
 
-    # CORS Headers
-    add_header Access-Control-Allow-Origin "*" always;
-    add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-    add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
+# CORS selon votre domaine
+CORS_ORIGIN=https://votre-domaine.com
+
+# Sécurité production
+APP_DEBUG=false
+LOG_LEVEL=error
+```
+
+### Frontend (si domaine différent)
+
+**Modifier `frontend/src/config/environment.js` :**
+```javascript
+production: {
+  API_BASE_URL: 'https://votre-domaine.com/journey/backend/public/api.php',
+  FRONTEND_URL: 'https://votre-domaine.com/journey',
+  // ...
 }
 ```
 
-### 5. Sécurisation
+---
 
-#### A. HTTPS
-```bash
-# Installation de Certbot pour Let's Encrypt
-sudo apt install certbot python3-certbot-apache
-sudo certbot --apache -d votre-domaine.com
-```
+## ✅ Checklist de Déploiement
 
-#### B. Sécurisation des Accès Admin
-- Changer les mots de passe par défaut
-- Utiliser des mots de passe forts
-- Limiter les tentatives de connexion
+### Avant Déploiement
+- [ ] `npm run build` exécuté
+- [ ] `composer install --no-dev` exécuté
+- [ ] Base de données importée
+- [ ] `.env.production` configuré
 
-### 6. Tests de Production
+### Tests Post-Déploiement
+- [ ] Page d'accueil se charge : `/journey`
+- [ ] API répond : `/journey/backend/public/api.php?path=test`
+- [ ] Inscription fonctionne
+- [ ] Login admin fonctionne
+- [ ] Responsive mobile/desktop
+- [ ] HTTPS actif (si serveur distant)
 
-#### A. Vérifications à effectuer :
-- [ ] Page d'accueil se charge correctement
-- [ ] Inscription d'un nouvel agent fonctionne
-- [ ] Connexion admin fonctionne
-- [ ] Modification des utilisateurs fonctionne
-- [ ] Responsive design sur mobile
-- [ ] HTTPS actif et certificat valide
+### Maintenance
+- [ ] Sauvegarde BDD régulière
+- [ ] Logs d'erreur surveillés
+- [ ] Mises à jour sécurité appliquées
 
-#### B. Tests de Performance
-```bash
-# Test de charge basique
-ab -n 100 -c 10 https://votre-domaine.com/
-```
-
-### 7. Maintenance
-
-#### A. Sauvegarde Automatique
-Script de sauvegarde quotidienne :
-```bash
-#!/bin/bash
-# backup.sh
-DATE=$(date +%Y%m%d_%H%M%S)
-mysqldump -u username -p database_name > /backups/db_backup_$DATE.sql
-tar -czf /backups/files_backup_$DATE.tar.gz /var/www/html/votre-site/
-```
-
-#### B. Monitoring
-- Surveillance des logs d'erreur
-- Monitoring de l'espace disque
-- Vérification régulière des mises à jour de sécurité
-
-### 8. Mise à Jour
-
-Pour déployer une nouvelle version :
-1. Effectuer les modifications en local
-2. Tester en environnement de développement
-3. Créer un nouveau build : `npm run build`
-4. Sauvegarder la version actuelle en production
-5. Déployer les nouveaux fichiers
-6. Tester la nouvelle version
+---
 
 ## 🔧 Dépannage
 
 ### Problèmes Courants
-- **Erreur 404 sur les routes** : Vérifier la configuration du serveur web
-- **Erreur CORS** : Vérifier les headers CORS dans la configuration
-- **Problème de base de données** : Vérifier les paramètres de connexion
-- **Fichiers non trouvés** : Vérifier les permissions et chemins
 
-### Logs à consulter
-- `/var/log/apache2/error.log` (Apache)
-- `/var/log/nginx/error.log` (Nginx)
-- Logs PHP dans `/var/log/php/`
+**Erreur CORS :**
+- Vérifier que `CORS_ORIGIN` dans `.env.production` correspond au domaine frontend
+- La gestion CORS est automatique dans `api.php`
 
-## 📞 Support
+**API 500 :**
+- Vérifier les permissions PHP
+- Consulter les logs Apache/PHP
+- Vérifier la connexion base de données
 
-En cas de problème, vérifier :
-1. Les logs du serveur web
-2. Les logs PHP
-3. La console développeur du navigateur
-4. La configuration de la base de données
+**Routes React 404 :**
+- Vérifier la configuration `.htaccess`
+- S'assurer que `mod_rewrite` est activé
+
+### Logs Utiles
+
+```bash
+# Logs Apache
+tail -f /var/log/apache2/error.log
+
+# Logs PHP (selon config)
+tail -f /var/log/php/error.log
+
+# Test API direct
+curl -v http://127.0.0.1/journey/backend/public/api.php?path=test
+```
+
+---
+
+## 📚 Documentation Complémentaire
+
+- **[README.md](README.md)** : Vue d'ensemble et installation
+- **[ENVIRONMENTS.md](ENVIRONMENTS.md)** : Configuration détaillée des environnements
+- **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** : Guide d'utilisation admin
+- **[STRUCTURE_CLEAN.md](STRUCTURE_CLEAN.md)** : Architecture technique
+
+**🎯 L'objectif : Un déploiement simple avec une configuration automatique !**

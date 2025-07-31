@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import StatCard from '../components/StatCard';
-import { apiGet } from '../api';
+import { apiGet, apiPost } from '../api';
+import { ENV_CONFIG } from '../config/environment';
 
 const STATUTS = [
   { value: 'tous', label: 'Tous' },
@@ -137,11 +138,11 @@ export default function GestionPage() {
     if (!window.confirm('Supprimer cet agent ?')) return;
     setLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', codePersonnel);
-      const response = await fetch(url, { method: 'DELETE' });
-      const data = await response.json();
+      const data = await apiGet('agents', { 
+        code: codePersonnel,
+        _method: 'DELETE'
+      });
+      
       if (data.success) {
         setAlert('success', {
           message: 'Agent supprimé avec succès.',
@@ -169,16 +170,11 @@ export default function GestionPage() {
   const handleChangeStatut = async (codePersonnel, nouveauStatut) => {
     setLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', codePersonnel);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut: nouveauStatut })
+      const data = await apiPost('agents', {
+        code: codePersonnel,
+        _method: 'PUT',
+        statut: nouveauStatut
       });
-      const data = await response.json();
       
       if (data.success) {
         setAlert('success', {
@@ -205,8 +201,11 @@ export default function GestionPage() {
   };
 
   const handleExportCSV = () => {
-    const url = 'http://localhost:8080/journeyV2/backend/public/api.php?path=export';
-    window.open(url, '_blank');
+    // Use the same API_BASE from api.js
+    const API_BASE = ENV_CONFIG.API_BASE_URL;
+    const url = new URL(API_BASE);
+    url.searchParams.append('path', 'export');
+    window.open(url.toString(), '_blank');
   };
 
   // Fonctions de gestion des notes
@@ -236,16 +235,11 @@ export default function GestionPage() {
     
     setActionLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', agent.code_personnel);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: null })
+      const data = await apiPost('agents', {
+        code: agent.code_personnel,
+        _method: 'PUT',
+        note: null
       });
-      const data = await response.json();
       
       if (data.success) {
         setAlert('success', {
@@ -265,7 +259,7 @@ export default function GestionPage() {
       }
     } catch (e) {
       setAlert('note_error', {
-        message: 'Erreur de connexion au serveur',
+        message: e.message || 'Erreur de connexion au serveur',
         type: 'error'
       });
     } finally {
@@ -281,16 +275,11 @@ export default function GestionPage() {
     
     setActionLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', modalAgent.code_personnel);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: noteText.trim() })
+      const data = await apiPost('agents', {
+        code: modalAgent.code_personnel,
+        _method: 'PUT',
+        note: noteText.trim()
       });
-      const data = await response.json();
       
       if (data.success) {
         setAlert('success', {
@@ -309,7 +298,7 @@ export default function GestionPage() {
       }
     } catch (e) {
       setAlert('note_error', {
-        message: 'Erreur de connexion au serveur',
+        message: e.message || 'Erreur de connexion au serveur',
         type: 'error'
       });
     } finally {

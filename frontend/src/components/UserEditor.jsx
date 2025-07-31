@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { apiGet, apiPost } from '../api';
 
 const STATUTS = [
   { value: 'inscrit', label: 'Inscrit' },
@@ -52,13 +53,7 @@ export default function UserEditor() {
 
   const fetchAgents = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/journeyV2/backend/public/api.php?path=agents', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await apiGet('agents');
       if (Array.isArray(data)) {
         setAgents(data);
       }
@@ -70,13 +65,7 @@ export default function UserEditor() {
   const fetchCreneaux = useCallback(async () => {
     setLoadingCreneaux(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/journeyV2/backend/public/api.php?path=creneaux', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await apiGet('creneaux');
       setCreneaux(data);
     } catch (error) {
       showAlert('Erreur lors du chargement des créneaux', 'error');
@@ -89,13 +78,7 @@ export default function UserEditor() {
   const fetchHistory = async (codePersonnel) => {
     setLoadingHistory(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/journeyV2/backend/public/api.php?path=history&code=${codePersonnel}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await apiGet('history', { code: codePersonnel });
       
       if (data.success) {
         setHistory(data.history);
@@ -170,21 +153,8 @@ export default function UserEditor() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/journeyV2/backend/public/api.php?path=search&q=${searchCode}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      
-      if (response.status === 404) {
-        showAlert('Agent non trouvé', 'error');
-        setSelectedAgent(null);
-      } else if (data.error) {
-        showAlert(data.error, 'error');
-        setSelectedAgent(null);
-      } else {
+      try {
+        const data = await apiGet('search', { q: searchCode });
         setSelectedAgent(data);
         setEditForm({
           nom: data.nom || '',
@@ -196,6 +166,13 @@ export default function UserEditor() {
           note: data.note || ''
         });
         setEditMode(false);
+      } catch (apiError) {
+        if (apiError.message.includes('404')) {
+          showAlert('Agent non trouvé', 'error');
+        } else {
+          showAlert(apiError.message || 'Erreur lors de la recherche', 'error');
+        }
+        setSelectedAgent(null);
       }
     } catch (error) {
       showAlert('Erreur de connexion au serveur', 'error');
@@ -210,21 +187,13 @@ export default function UserEditor() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/journeyV2/backend/public/api.php?path=agents&code=${selectedAgent.code_personnel}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...editForm,
-          restauration_sur_place: editForm.restauration_sur_place ? 1 : 0,
-          nombre_proches: parseInt(editForm.nombre_proches)
-        })
+      const data = await apiPost('agents', {
+        code: selectedAgent.code_personnel,
+        _method: 'PUT',
+        ...editForm,
+        restauration_sur_place: editForm.restauration_sur_place ? 1 : 0,
+        nombre_proches: parseInt(editForm.nombre_proches)
       });
-      
-      const data = await response.json();
       
       if (data.success) {
         showAlert('Informations mises à jour avec succès', 'success');
@@ -235,7 +204,7 @@ export default function UserEditor() {
         showAlert(data.error || 'Erreur lors de la mise à jour', 'error');
       }
     } catch (error) {
-      showAlert('Erreur de connexion au serveur', 'error');
+      showAlert(error.message || 'Erreur de connexion au serveur', 'error');
     } finally {
       setLoading(false);
     }

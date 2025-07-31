@@ -25,7 +25,7 @@ export default function App() {
         timeout: 5000
       }}
     >
-      <Router>
+      <Router basename="/journey">
         <div className="app-layout">
           <div className="header-area"><Header /></div>
           <div className="nav-area"><Navbar /></div>
