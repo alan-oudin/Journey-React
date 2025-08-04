@@ -7,25 +7,7 @@ SUPPRESSION DU CHAMP SERVICE
 ========================================
 */
 
-// Avant tout output
-header("Access-Control-Allow-Origin: http://localhost:3000");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
-
-// Si c'est une requête OPTIONS (préflight), on arrête ici
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Démarrer la capture de sortie pour éviter les problèmes de headers
-ob_start();
-
-// Désactiver l'affichage des erreurs en production
-error_reporting(0);
-ini_set('display_errors', 0);
-
+// Les en-têtes CORS seront définis après la détection d'environnement
 
 // Fonction pour charger les variables d'environnement depuis un fichier .env
 function loadEnv($path) {
@@ -61,11 +43,69 @@ function loadEnv($path) {
     return true;
 }
 
-// Charger les variables d'environnement
+// Charger le fichier .env unique
 $envFile = __DIR__ . '/../.env';
 if (!loadEnv($envFile)) {
-    error_log('Fichier .env non trouvé. Utilisation des valeurs par défaut.');
+    error_log('Fichier .env non trouvé dans : ' . $envFile);
 }
+
+// Détecter automatiquement l'environnement selon l'host
+$environment = 'development';
+$corsOrigin = 'http://localhost:3000';
+
+if (isset($_SERVER['HTTP_HOST'])) {
+    $host = $_SERVER['HTTP_HOST'];
+    $hostname = explode(':', $host)[0];
+    
+    // Si ce n'est pas localhost, c'est la production
+    if (!in_array($hostname, ['localhost', '127.0.0.1']) && strpos($hostname, '.local') === false) {
+        $environment = 'production';
+        $corsOrigin = 'https://tmtercvdl.sncf.fr';
+    }
+}
+
+// Autoriser l'origine de la requête si elle correspond
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($requestOrigin === 'https://tmtercvdl.sncf.fr' || $requestOrigin === 'http://localhost:3000') {
+    $corsOrigin = $requestOrigin;
+}
+
+$appDebug = filter_var($_ENV['APP_DEBUG'] ?? getenv('APP_DEBUG') ?? true, FILTER_VALIDATE_BOOLEAN);
+
+// Log pour debugging
+error_log("=== CORS DEBUG START ===");
+error_log("Environment detected: $environment");
+error_log("CORS Origin: $corsOrigin");
+error_log("Request Origin: $requestOrigin");
+error_log("HTTP Host: " . ($_SERVER['HTTP_HOST'] ?? 'undefined'));
+error_log("Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'undefined'));
+error_log("Path: " . ($_GET['path'] ?? 'undefined'));
+error_log("=== CORS DEBUG END ===");
+
+// Définir les en-têtes CORS basés sur l'environnement détecté
+header("Access-Control-Allow-Origin: $corsOrigin");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
+
+// Si c'est une requête OPTIONS (préflight), on arrête ici
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Démarrer la capture de sortie pour éviter les problèmes de headers
+ob_start();
+
+// Configuration des erreurs basée sur l'environnement
+if ($appDebug) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+}
+
 
 // Configuration base de données
 $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? 'localhost';
@@ -101,6 +141,22 @@ try {
         )
     ");
 
+    // Créer la table d'historique des modifications
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS agent_modifications_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            agent_id INT NOT NULL,
+            code_personnel VARCHAR(8) NOT NULL,
+            field_name VARCHAR(50) NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            modified_by VARCHAR(50),
+            modification_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_agent_code (code_personnel),
+            INDEX idx_modification_date (modification_date)
+        )
+    ");
+
     // Vérifier si un admin par défaut existe déjà
     $stmt = $pdo->query("SELECT COUNT(*) as count FROM admins");
     $result = $stmt->fetch();
@@ -119,7 +175,7 @@ try {
         error_log('Admin par défaut créé: admin/admin123');
     }
 } catch (PDOException $e) {
-    error_log('Erreur lors de la création de la table admins: ' . $e->getMessage());
+    error_log('Erreur lors de la création des tables: ' . $e->getMessage());
 }
 
 // Récupération du path
@@ -330,6 +386,21 @@ try {
                     $params[] = $input['note'];
                 }
 
+                if (isset($input['nom'])) {
+                    $updates[] = "nom = ?";
+                    $params[] = strtoupper(trim($input['nom']));
+                }
+
+                if (isset($input['prenom'])) {
+                    $updates[] = "prenom = ?";
+                    $params[] = ucfirst(strtolower(trim($input['prenom'])));
+                }
+
+                if (isset($input['restauration_sur_place'])) {
+                    $updates[] = "restauration_sur_place = ?";
+                    $params[] = (int)$input['restauration_sur_place'];
+                }
+
                 if (empty($updates)) {
                     throw new Exception('Aucune modification spécifiée');
                 }
@@ -338,10 +409,60 @@ try {
                 $updates[] = "updated_at = NOW()";
                 $params[] = $code;
 
+                // Préparer l'historique des modifications avant la mise à jour
+                $changesHistory = [];
+                foreach ($input as $field => $newValue) {
+                    if (isset($agent[$field]) && $agent[$field] != $newValue) {
+                        $changesHistory[] = [
+                            'field' => $field,
+                            'old_value' => $agent[$field],
+                            'new_value' => $newValue
+                        ];
+                    }
+                }
+
                 // Exécuter la mise à jour
                 $sql = "UPDATE agents_inscriptions SET " . implode(', ', $updates) . " WHERE code_personnel = ?";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute($params);
+
+                // Enregistrer l'historique des modifications
+                if (!empty($changesHistory)) {
+                    // Récupérer les informations de l'utilisateur administrateur connecté
+                    $headers = getallheaders();
+                    $authHeader = $headers['Authorization'] ?? '';
+                    $modifiedBy = 'unknown';
+                    
+                    if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                        $token = $matches[1];
+                        try {
+                            $payload = json_decode(base64_decode($token), true);
+                            if ($payload && isset($payload['username'])) {
+                                $modifiedBy = $payload['username'];
+                            }
+                        } catch (Exception $e) {
+                            // Si on ne peut pas décoder le token, on garde 'unknown'
+                        }
+                    }
+
+                    // Insérer chaque modification dans l'historique
+                    $historyStmt = $pdo->prepare("
+                        INSERT INTO agent_modifications_history 
+                        (agent_id, code_personnel, field_name, old_value, new_value, modified_by) 
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ");
+                    
+                    foreach ($changesHistory as $change) {
+                        $historyStmt->execute([
+                            $agent['id'],
+                            $code,
+                            $change['field'],
+                            $change['old_value'],
+                            $change['new_value'],
+                            $modifiedBy
+                        ]);
+                    }
+                }
 
                 // Récupérer l'agent mis à jour
                 $stmt = $pdo->prepare("SELECT * FROM agents_inscriptions WHERE code_personnel = ?");
@@ -418,6 +539,65 @@ try {
                 }
             } else {
                 throw new Exception('Méthode non autorisée pour /search');
+            }
+            break;
+
+        case 'history':
+            if ($method === 'GET') {
+                // Vérifier l'authentification
+                $headers = getallheaders();
+                $authHeader = $headers['Authorization'] ?? '';
+                
+                if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Token d\'authentification requis']);
+                    return;
+                }
+                
+                $token = $matches[1];
+                try {
+                    $payload = json_decode(base64_decode($token), true);
+                    if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                        throw new Exception('Token expiré');
+                    }
+                } catch (Exception $e) {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Token invalide']);
+                    return;
+                }
+
+                $code = $_GET['code'] ?? '';
+                if (empty($code)) {
+                    throw new Exception('Code personnel manquant pour l\'historique');
+                }
+
+                // Récupérer l'historique des modifications pour cet agent
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        h.id,
+                        h.field_name,
+                        h.old_value,
+                        h.new_value,
+                        h.modified_by,
+                        h.modification_date,
+                        a.nom,
+                        a.prenom
+                    FROM agent_modifications_history h
+                    LEFT JOIN agents_inscriptions a ON h.agent_id = a.id
+                    WHERE h.code_personnel = ?
+                    ORDER BY h.modification_date DESC
+                    LIMIT 50
+                ");
+                $stmt->execute([$code]);
+                $history = $stmt->fetchAll();
+
+                echo json_encode([
+                    'success' => true,
+                    'history' => $history,
+                    'code_personnel' => $code
+                ]);
+            } else {
+                throw new Exception('Méthode non autorisée pour /history');
             }
             break;
 
@@ -542,7 +722,7 @@ try {
 
         case 'export':
             if ($method === 'GET') {
-                // Exporter toutes les données en CSV (sans service)
+                // Exporter toutes les données en CSV (avec note et restauration)
                 $stmt = $pdo->query("
                     SELECT 
                         code_personnel,
@@ -558,6 +738,11 @@ try {
                         END as periode,
                         statut,
                         heure_validation,
+                        CASE 
+                            WHEN restauration_sur_place = 1 THEN 'Oui'
+                            ELSE 'Non'
+                        END as restauration_sur_place,
+                        note,
                         date_inscription,
                         updated_at
                     FROM agents_inscriptions 
@@ -566,7 +751,7 @@ try {
 
                 $agents = $stmt->fetchAll();
 
-                // Headers CSV (sans service)
+                // Headers CSV (avec note et restauration)
                 header('Content-Type: text/csv; charset=utf-8');
                 header('Content-Disposition: attachment; filename="inscriptions_journee_proches_' . date('Y-m-d_H-i') . '.csv"');
                 header('Cache-Control: max-age=0');
@@ -577,7 +762,7 @@ try {
                 // BOM pour UTF-8
                 fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
-                // En-têtes (sans service)
+                // En-têtes (avec note et restauration)
                 fputcsv($output, [
                     'Code Personnel',
                     'Nom',
@@ -588,11 +773,13 @@ try {
                     'Période',
                     'Statut',
                     'Heure Pointage',
+                    'Restauration Sur Place',
+                    'Note',
                     'Date Inscription',
                     'Dernière Modification'
                 ], ';');
 
-                // Données (sans service)
+                // Données (avec note et restauration)
                 foreach ($agents as $agent) {
                     fputcsv($output, [
                         $agent['code_personnel'],
@@ -604,6 +791,8 @@ try {
                         $agent['periode'],
                         ucfirst($agent['statut']),
                         $agent['heure_validation'] ? date('d/m/Y H:i', strtotime($agent['heure_validation'])) : '',
+                        $agent['restauration_sur_place'],
+                        $agent['note'] ? $agent['note'] : '',
                         date('d/m/Y H:i', strtotime($agent['date_inscription'])),
                         $agent['updated_at'] ? date('d/m/Y H:i', strtotime($agent['updated_at'])) : ''
                     ], ';');
@@ -751,11 +940,18 @@ try {
             if ($method === 'GET') {
                 // Lister tous les administrateurs
                 $stmt = $pdo->query("
-                    SELECT id, username, role, created_at, updated_at 
+                    SELECT id, username, role, created_at, updated_at,
+                           CASE WHEN id = 1 THEN 1 ELSE 0 END as is_default
                     FROM admins 
                     ORDER BY created_at DESC
                 ");
                 $admins = $stmt->fetchAll();
+                
+                // Convertir is_default en boolean
+                foreach ($admins as &$admin) {
+                    $admin['is_default'] = (bool)$admin['is_default'];
+                }
+                
                 echo json_encode($admins);
                 
             } elseif ($method === 'POST') {
@@ -836,6 +1032,132 @@ try {
             }
             break;
 
+        case 'admins/set-default':
+            // Vérifier l'authentification pour les routes admin
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? '';
+            
+            if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token d\'authentification requis']);
+                return;
+            }
+            
+            $token = $matches[1];
+            try {
+                $payload = json_decode(base64_decode($token), true);
+                if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                    throw new Exception('Token expiré');
+                }
+                
+                $stmt = $pdo->prepare("SELECT id, role FROM admins WHERE id = ? AND username = ?");
+                $stmt->execute([$payload['sub'], $payload['username']]);
+                $currentUser = $stmt->fetch();
+                
+                if (!$currentUser) {
+                    throw new Exception('Utilisateur non trouvé');
+                }
+            } catch (Exception $e) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token invalide']);
+                return;
+            }
+            
+            if ($method === 'POST') {
+                // Changer l'administrateur par défaut
+                $input = json_decode(file_get_contents('php://input'), true);
+                
+                if (!$input || !isset($input['id'])) {
+                    throw new Exception('ID de l\'administrateur requis');
+                }
+                
+                $newDefaultId = $input['id'];
+                
+                // Vérifier que l'administrateur existe
+                $stmt = $pdo->prepare("SELECT username FROM admins WHERE id = ?");
+                $stmt->execute([$newDefaultId]);
+                $newAdmin = $stmt->fetch();
+                
+                if (!$newAdmin) {
+                    throw new Exception('Administrateur non trouvé');
+                }
+                
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // Nouvelle approche: utiliser des noms temporaires pour éviter les conflits de contraintes
+                    
+                    // 1. Sauvegarder les données de l'ancien admin par défaut
+                    $stmt = $pdo->prepare("SELECT username, password, role FROM admins WHERE id = 1");
+                    $stmt->execute();
+                    $oldDefault = $stmt->fetch();
+                    
+                    // 2. Sauvegarder les données du nouveau admin par défaut
+                    $stmt = $pdo->prepare("SELECT username, password, role FROM admins WHERE id = ?");
+                    $stmt->execute([$newDefaultId]);
+                    $newDefault = $stmt->fetch();
+                    
+                    // 3. Créer des noms temporaires uniques
+                    $tempName1 = 'temp_' . time() . '_1';
+                    $tempName2 = 'temp_' . time() . '_2';
+                    
+                    // 4. Mettre des noms temporaires pour éviter les conflits
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ? WHERE id = 1");
+                    $stmt->execute([$tempName1]);
+                    
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ? WHERE id = ?");
+                    $stmt->execute([$tempName2, $newDefaultId]);
+                    
+                    // 5. Maintenant échanger les vraies données
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ?, password = ?, role = ? WHERE id = 1");
+                    $stmt->execute([$newDefault['username'], $newDefault['password'], $newDefault['role']]);
+                    
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ?, password = ?, role = ? WHERE id = ?");
+                    $stmt->execute([$oldDefault['username'], $oldDefault['password'], $oldDefault['role'], $newDefaultId]);
+                    
+                    $pdo->commit();
+                    
+                    // Régénérer le token pour l'utilisateur connecté si ses données ont changé
+                    $newToken = null;
+                    if ($currentUser['id'] == 1 || $currentUser['id'] == $newDefaultId) {
+                        // L'utilisateur connecté a été affecté par l'échange, régénérer son token
+                        $stmt = $pdo->prepare("SELECT id, username, role FROM admins WHERE id = ?");
+                        $stmt->execute([$currentUser['id']]);
+                        $updatedUser = $stmt->fetch();
+                        
+                        if ($updatedUser) {
+                            $tokenPayload = [
+                                'sub' => $updatedUser['id'],
+                                'username' => $updatedUser['username'],
+                                'role' => $updatedUser['role'],
+                                'exp' => time() + 3600 // Expire dans 1 heure
+                            ];
+                            $newToken = base64_encode(json_encode($tokenPayload));
+                        }
+                    }
+                    
+                    $response = [
+                        'success' => true,
+                        'message' => "Administrateur par défaut changé vers {$newAdmin['username']}"
+                    ];
+                    
+                    if ($newToken) {
+                        $response['new_token'] = $newToken;
+                        $response['token_updated'] = true;
+                    }
+                    
+                    echo json_encode($response);
+                    
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    throw new Exception('Erreur lors du changement: ' . $e->getMessage());
+                }
+                
+            } else {
+                throw new Exception('Méthode non autorisée pour /admins/set-default');
+            }
+            break;
+
         default:
             // Page d'accueil de l'API avec documentation complète
             echo json_encode([
@@ -851,6 +1173,7 @@ try {
                     'PUT /agents?code=CODE' => 'Modifier un agent (statut, etc.)',
                     'DELETE /agents?code=CODE' => 'Supprimer un agent',
                     'GET /search?q=CODE' => 'Rechercher un agent par code personnel',
+                    'GET /history?code=CODE' => 'Historique des modifications d\'un agent',
                     'GET /creneaux' => 'Disponibilités de tous les créneaux',
                     'GET /stats' => 'Statistiques complètes avec statuts',
                     'GET /export' => 'Télécharger export CSV complet',

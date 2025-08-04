@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {apiGet} from '../api';
+import {apiGet, apiPut} from '../api';
 import { useAlertDrawer } from '../contexts/AlertContext.tsx';
 
 export default function RecherchePage() {
@@ -7,7 +7,7 @@ export default function RecherchePage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [agentTrouve, setAgentTrouve] = useState(null);
-    const [error, setError] = useState('');
+    // const [error, setError] = useState(''); // Non utilisé actuellement
     const [actionLoading, setActionLoading] = useState(false);
     const [showNoteModal, setShowNoteModal] = useState(false);
     const [noteText, setNoteText] = useState('');
@@ -16,7 +16,6 @@ export default function RecherchePage() {
     const handleSearch = async value => {
         setSearchTerm(value);
         setAgentTrouve(null);
-        setError('');
         const regexCP = /^\d{7}[A-Z]$/;
         if (!value || !regexCP.test(value)) return;
         setLoading(true);
@@ -42,16 +41,11 @@ export default function RecherchePage() {
         
         setActionLoading(true);
         try {
-            const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-            url.searchParams.append('path', 'agents');
-            url.searchParams.append('code', agentTrouve.code_personnel);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statut: nouveauStatut })
+            const data = await apiPut('agents', {
+                statut: nouveauStatut
+            }, {
+                code: agentTrouve.code_personnel
             });
-            const data = await response.json();
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, statut: nouveauStatut }));
@@ -74,7 +68,7 @@ export default function RecherchePage() {
         } catch (e) {
             showAlert({
                 title: 'Erreur',
-                subtitle: 'Erreur de connexion au serveur',
+                subtitle: e.message || 'Erreur de connexion au serveur',
                 intent: 'error',
                 showProgressBar: true,
                 timeout: 5000
@@ -107,16 +101,11 @@ export default function RecherchePage() {
         
         setActionLoading(true);
         try {
-            const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-            url.searchParams.append('path', 'agents');
-            url.searchParams.append('code', agentTrouve.code_personnel);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note: null })
+            const data = await apiPut('agents', {
+                note: ""
+            }, {
+                code: agentTrouve.code_personnel
             });
-            const data = await response.json();
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, note: null }));
@@ -139,7 +128,7 @@ export default function RecherchePage() {
         } catch (e) {
             showAlert({
                 title: 'Erreur',
-                subtitle: 'Erreur de connexion au serveur',
+                subtitle: e.message || 'Erreur de connexion au serveur',
                 intent: 'error',
                 showProgressBar: true,
                 timeout: 5000
@@ -157,16 +146,11 @@ export default function RecherchePage() {
         
         setActionLoading(true);
         try {
-            const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-            url.searchParams.append('path', 'agents');
-            url.searchParams.append('code', agentTrouve.code_personnel);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ note: noteText.trim() })
+            const data = await apiPut('agents', {
+                note: noteText.trim()
+            }, {
+                code: agentTrouve.code_personnel
             });
-            const data = await response.json();
             
             if (data.success) {
                 setAgentTrouve(prev => ({ ...prev, note: noteText.trim() }));
@@ -190,7 +174,7 @@ export default function RecherchePage() {
         } catch (e) {
             showAlert({
                 title: 'Erreur',
-                subtitle: 'Erreur de connexion au serveur',
+                subtitle: e.message || 'Erreur de connexion au serveur',
                 intent: 'error',
                 showProgressBar: true,
                 timeout: 5000
@@ -229,7 +213,7 @@ export default function RecherchePage() {
 
                             </wsc-card-header>
                             <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
-                            <wsc-card-content>
+                            <wsc-card-content className="agent-details">
                                 <div style={{marginBottom: '20px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px'}}>
                                     <div style={{fontSize: '1.2em', fontWeight: 'bold', marginBottom: '8px'}}>
                                         {agentTrouve.prenom} {agentTrouve.nom}
@@ -262,7 +246,7 @@ export default function RecherchePage() {
                                     <div style={{padding: '12px', border: '1px solid #e0e0e0', borderRadius: '6px'}}>
                                         <div style={{fontWeight: 'bold', marginBottom: ' 4px'}}>🍽️ Restauration</div>
                                         <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                            {agentTrouve.restauration_sur_place === 1 || agentTrouve.restauration_sur_place === true ? (
+                                            {agentTrouve.restauration_sur_place === 1 || agentTrouve.restauration_sur_place === "1" || agentTrouve.restauration_sur_place === true ? (
                                                 <>
                                                     <span style={{color: '#28a745', fontSize: '1.2em'}}>✅</span>
                                                     <span style={{color: '#28a745', fontWeight: 'bold'}}>Oui</span>
@@ -275,7 +259,7 @@ export default function RecherchePage() {
                                             )}
                                         </div>
                                         <div style={{fontSize: '0.9em', color: '#666'}}>
-                                            {agentTrouve.restauration_sur_place === 1 || agentTrouve.restauration_sur_place === true ? 
+                                            {agentTrouve.restauration_sur_place === 1 || agentTrouve.restauration_sur_place === "1" || agentTrouve.restauration_sur_place === true ? 
                                                 'Intéressé(e) par la restauration sur place' : 
                                                 'Pas intéressé(e) par la restauration'
                                             }
@@ -367,7 +351,7 @@ export default function RecherchePage() {
                                     <div style={{fontWeight: 'bold', marginBottom: '12px', color: '#0066cc'}}>
                                         🎯 Actions rapides - Jour J
                                     </div>
-                                    <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+                                    <div className="agent-trouve" style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
                                         <wcs-button 
                                             color="success" 
                                             size="s"
@@ -488,47 +472,57 @@ export default function RecherchePage() {
                             </wcs-form-field>
                         )}
                         
-                        <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: noteMode === 'view' ? 'space-between' : 'flex-end' }}>
-                            {noteMode === 'view' && (
-                                <div style={{ display: 'flex', gap: 12 }}>
-                                    <wcs-button 
-                                        color="warning"
-                                        size="s"
-                                        onClick={handleModifierNote}
-                                        disabled={actionLoading}
-                                    >
-                                        ✏️ Modifier
-                                    </wcs-button>
-                                    <wcs-button 
-                                        color="danger"
-                                        size="s"
-                                        onClick={() => {
-                                            setShowNoteModal(false);
-                                            handleSupprimerNote();
-                                        }}
-                                        disabled={actionLoading}
-                                    >
-                                        🗑️ Supprimer
-                                    </wcs-button>
-                                </div>
-                            )}
-                            
+                        <div style={{ marginTop: 20 }}>
                             <div style={{ display: 'flex', gap: 12 }}>
-                                <wcs-button 
-                                    color="secondary"
-                                    onClick={() => setShowNoteModal(false)}
-                                    disabled={actionLoading}
-                                >
-                                    {noteMode === 'view' ? 'Fermer' : 'Annuler'}
-                                </wcs-button>
-                                {noteMode !== 'view' && (
-                                    <wcs-button 
-                                        color="primary"
-                                        onClick={handleSauvegarderNote}
-                                        disabled={actionLoading || !noteText.trim()}
-                                    >
-                                        {actionLoading ? <wcs-spinner size="small"></wcs-spinner> : 'Sauvegarder'}
-                                    </wcs-button>
+                                {noteMode === 'view' ? (
+                                    <>
+                                        <wcs-button 
+                                            color="warning"
+                                            size="s"
+                                            onClick={handleModifierNote}
+                                            disabled={actionLoading}
+                                        >
+                                            ✏️ Modifier
+                                        </wcs-button>
+                                        <wcs-button 
+                                            color="danger"
+                                            size="s"
+                                            onClick={() => {
+                                                setShowNoteModal(false);
+                                                handleSupprimerNote();
+                                            }}
+                                            disabled={actionLoading}
+                                        >
+                                            🗑️ Supprimer
+                                        </wcs-button>
+                                        <wcs-button
+                                            color="secondary"
+                                            size="s"
+                                            onClick={() => setShowNoteModal(false)}
+                                            disabled={actionLoading}
+                                        >
+                                            Fermer
+                                        </wcs-button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <wcs-button
+                                            color="primary"
+                                            size="s"
+                                            onClick={handleSauvegarderNote}
+                                            disabled={actionLoading || !noteText.trim()}
+                                        >
+                                            {actionLoading ? <wcs-spinner size="small"></wcs-spinner> : 'Sauvegarder'}
+                                        </wcs-button>
+                                        <wcs-button
+                                            color="secondary"
+                                            size="s"
+                                            onClick={() => setShowNoteModal(false)}
+                                            disabled={actionLoading}
+                                        >
+                                            Annuler
+                                        </wcs-button>
+                                    </>
                                 )}
                             </div>
                         </div>

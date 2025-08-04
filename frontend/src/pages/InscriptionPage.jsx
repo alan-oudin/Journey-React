@@ -8,7 +8,6 @@ export default function InscriptionPage() {
     codePersonnel: '',
     nom: '',
     prenom: '',
-    email: '',
     nombreProches: '',
     heureArrivee: '',
     restaurationSurPlace: false
@@ -16,8 +15,8 @@ export default function InscriptionPage() {
   const [loading, setLoading] = useState(false);
   const [creneaux, setCreneaux] = useState({ matin: {}, 'apres-midi': {} });
   const [loadingCreneaux, setLoadingCreneaux] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showInfoAlert, setShowInfoAlert] = useState(true);
+  // const [isAuthenticated, setIsAuthenticated] = useState(false); // Non utilisé actuellement
+  // const [showInfoAlert, setShowInfoAlert] = useState(true); // Non utilisé actuellement
   const selectRef = useRef(null);
   const checkboxRef = useRef(null);
 
@@ -57,19 +56,7 @@ export default function InscriptionPage() {
       .catch(() => setCreneaux({ matin: {}, 'apres-midi': {} }))
       .finally(() => setLoadingCreneaux(false));
     
-    // Vérifier l'état d'authentification
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      setIsAuthenticated(!!token);
-    };
-    
-    checkAuth();
-    // Écouter les changements du localStorage
-    window.addEventListener('storage', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-    };
+    // Code pour vérifier l'authentification supprimé car non utilisé
   }, []);
 
   useEffect(() => {
@@ -231,7 +218,7 @@ export default function InscriptionPage() {
         subtitle: 'Inscription réussie !',
         intent: 'success'
       });
-      setForm({ codePersonnel: '', nom: '', prenom: '', email: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
+      setForm({ codePersonnel: '', nom: '', prenom: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
       
       // Recharger les créneaux pour mettre à jour les indicateurs de places
       apiGet('creneaux')
@@ -448,7 +435,7 @@ export default function InscriptionPage() {
             </div>
           </div>
         </div>
-        <wcs-button type="submit" color="primary" shape="block" disabled={loading} style={{marginTop: 100,width: '100%'}}>
+        <wcs-button type="submit" color="primary" shape="block" disabled={loading} style={{marginTop: 15,width: '100%'}}>
           {loading ? <wcs-spinner size="small"></wcs-spinner> : "S'inscrire"}
         </wcs-button>
       </form>

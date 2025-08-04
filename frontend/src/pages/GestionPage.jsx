@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import StatCard from '../components/StatCard';
-import { apiGet } from '../api';
+import { apiGet, apiPost, apiPut, apiDelete } from '../api';
+import { ENV_CONFIG } from '../config/environment';
 
 const STATUTS = [
   { value: 'tous', label: 'Tous' },
@@ -103,8 +104,8 @@ export default function GestionPage() {
 
   // Cleanup des timeouts lors du démontage du composant
   useEffect(() => {
+    const currentTimeouts = timeoutRefs.current;
     return () => {
-      const currentTimeouts = timeoutRefs.current;
       Object.values(currentTimeouts).forEach(timeoutId => {
         clearTimeout(timeoutId);
       });
@@ -137,11 +138,8 @@ export default function GestionPage() {
     if (!window.confirm('Supprimer cet agent ?')) return;
     setLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', codePersonnel);
-      const response = await fetch(url, { method: 'DELETE' });
-      const data = await response.json();
+      const data = await apiDelete('agents', { code: codePersonnel });
+      
       if (data.success) {
         setAlert('success', {
           message: 'Agent supprimé avec succès.',
@@ -169,16 +167,11 @@ export default function GestionPage() {
   const handleChangeStatut = async (codePersonnel, nouveauStatut) => {
     setLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', codePersonnel);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut: nouveauStatut })
+      const data = await apiPut('agents', {
+        statut: nouveauStatut
+      }, {
+        code: codePersonnel
       });
-      const data = await response.json();
       
       if (data.success) {
         setAlert('success', {
@@ -205,8 +198,11 @@ export default function GestionPage() {
   };
 
   const handleExportCSV = () => {
-    const url = 'http://localhost:8080/journeyV2/backend/public/api.php?path=export';
-    window.open(url, '_blank');
+    // Use the same API_BASE from api.js
+    const API_BASE = ENV_CONFIG.API_BASE_URL;
+    const url = new URL(API_BASE);
+    url.searchParams.append('path', 'export');
+    window.open(url.toString(), '_blank');
   };
 
   // Fonctions de gestion des notes
@@ -236,16 +232,11 @@ export default function GestionPage() {
     
     setActionLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', agent.code_personnel);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: null })
+      const data = await apiPut('agents', {
+        note: null
+      }, {
+        code: agent.code_personnel
       });
-      const data = await response.json();
       
       if (data.success) {
         setAlert('success', {
@@ -265,7 +256,7 @@ export default function GestionPage() {
       }
     } catch (e) {
       setAlert('note_error', {
-        message: 'Erreur de connexion au serveur',
+        message: e.message || 'Erreur de connexion au serveur',
         type: 'error'
       });
     } finally {
@@ -281,16 +272,11 @@ export default function GestionPage() {
     
     setActionLoading(true);
     try {
-      const url = new URL('http://localhost:8080/journeyV2/backend/public/api.php');
-      url.searchParams.append('path', 'agents');
-      url.searchParams.append('code', modalAgent.code_personnel);
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: noteText.trim() })
+      const data = await apiPut('agents', {
+        note: noteText.trim()
+      }, {
+        code: modalAgent.code_personnel
       });
-      const data = await response.json();
       
       if (data.success) {
         setAlert('success', {
@@ -309,7 +295,7 @@ export default function GestionPage() {
       }
     } catch (e) {
       setAlert('note_error', {
-        message: 'Erreur de connexion au serveur',
+        message: e.message || 'Erreur de connexion au serveur',
         type: 'error'
       });
     } finally {
@@ -360,7 +346,7 @@ export default function GestionPage() {
 
       <div className="form-columns">
         <div className="form-left">
-          <div style={{display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24}}>
+          <div style={{display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24,justifyContent:'center'}}>
             <StatCard number={stats ? stats.total_agents : agents.length} label="Total agents" />
             <StatCard number={stats ? stats.agents_presents : 0} label="Présents" />
             <StatCard number={stats ? stats.agents_inscrits : 0} label="Inscrits" />
@@ -373,15 +359,15 @@ export default function GestionPage() {
             />
           </div>
 
-          <wcs-button color="primary" style={{marginTop: 16, marginBottom: 16}} onClick={handleExportCSV} disabled={loading || agents.length === 0}>
+          <wcs-button color="primary" style={{marginTop: 16, marginBottom: 16,display:'flex'}} onClick={handleExportCSV} disabled={loading || agents.length === 0}>
             📊 Exporter CSV
           </wcs-button>
 
-          <h3 style={{marginTop: '2rem'}}>Disponibilité des créneaux</h3>
+          <h3 style={{marginTop: '2rem',textAlign:'center'}}>Disponibilité des créneaux</h3>
           {loadingCreneaux ? (
             <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>
           ) : (
-            <div style={{display: 'flex', gap: 32, flexWrap: 'wrap'}}>
+            <div style={{display: 'flex', gap: 32, flexWrap: 'wrap',justifyContent: 'center'}}>
               <wcs-card mode="flat" style={{minWidth: 280, width: '100%', maxWidth: 400}}>
                 <wsc-card-body>
                   <wsc-card-header>
@@ -389,33 +375,33 @@ export default function GestionPage() {
                   </wsc-card-header>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
-                <table style={{borderCollapse: 'collapse', width: '100%'}}>
-                  <thead>
-                    <tr>
-                      <th style={{padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Heure</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Agents</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Personnes</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Places libres</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {creneauxMatin.map(heure => {
-                      const info = creneaux.matin[heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
-                      return (
-                        <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
-                          <td style={{padding: '8px 12px', textAlign: 'left'}}>{heure}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.agents_inscrits}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.personnes_total}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.places_restantes}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>
-                            {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      <table style={{borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed'}}>
+                        <thead>
+                          <tr>
+                            <th style={{padding: '6px 8px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em', whiteSpace: 'nowrap'}}>Heure</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Ag.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Pers.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Libres</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Statut</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creneauxMatin.map(heure => {
+                            const info = creneaux.matin[heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
+                            return (
+                              <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
+                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>{heure}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.agents_inscrits}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.personnes_total}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.places_restantes}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.85em'}}>
+                                  {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                   </wsc-card-content>
                 </wsc-card-body>
               </wcs-card>
@@ -426,33 +412,33 @@ export default function GestionPage() {
                   </wsc-card-header>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
-                <table style={{borderCollapse: 'collapse', width: '100%'}}>
-                  <thead>
-                    <tr>
-                      <th style={{padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Heure</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Agents</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Personnes</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Places libres</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {creneauxApresMidi.map(heure => {
-                      const info = creneaux['apres-midi'][heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
-                      return (
-                        <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
-                          <td style={{padding: '8px 12px', textAlign: 'left'}}>{heure}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.agents_inscrits}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.personnes_total}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.places_restantes}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>
-                            {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      <table style={{borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed'}}>
+                        <thead>
+                          <tr>
+                            <th style={{padding: '6px 8px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em', whiteSpace: 'nowrap'}}>Heure</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Ag.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Pers.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Libres</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Statut</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creneauxApresMidi.map(heure => {
+                            const info = creneaux['apres-midi'][heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
+                            return (
+                              <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
+                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>{heure}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.agents_inscrits}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.personnes_total}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.places_restantes}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.85em'}}>
+                                  {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                   </wsc-card-content>
                 </wsc-card-body>
               </wcs-card>
@@ -463,10 +449,9 @@ export default function GestionPage() {
         <div className="form-separator"></div>
         
         <div className="form-right">
-          <h3>Liste des agents inscrits</h3>
-          
+          <h3 style={{textAlign:'center'}}>Liste des agents inscrits</h3>
+          <strong>Filtrer par statut :</strong>{' '}
           <div style={{margin: '24px 0'}}>
-            <strong>Filtrer par statut :</strong>{' '}
             <wcs-button-group>
               {STATUTS.map(s => (
                 <wcs-button
@@ -494,7 +479,7 @@ export default function GestionPage() {
                 minHeight: 'auto',
                 flexDirection: 'row',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1,justifyContent:'space-between',flexWrap: 'wrap' }}>
                   <div style={{ fontWeight: 500, minWidth: 120 }}>
                     {agent.nom} {agent.prenom}
                   </div>
@@ -533,14 +518,15 @@ export default function GestionPage() {
                       {STATUTS.find(s => s.value === agent.statut)?.label || agent.statut}
                     </span>
                   </div>
+                  <wcs-button
+                      size="s"
+                      shape="outline"
+                      onClick={() => setModalAgent(agent)}
+                  >
+                    Détails
+                  </wcs-button>
                 </div>
-                <wcs-button 
-                  size="s" 
-                  shape="outline"
-                  onClick={() => setModalAgent(agent)}
-                >
-                  Détails
-                </wcs-button>
+
               </wcs-card>
             ))}
           </div>
@@ -679,7 +665,7 @@ export default function GestionPage() {
               <div>
                 <strong>Restauration sur place :</strong>
                 <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {modalAgent.restauration_sur_place === 1 || modalAgent.restauration_sur_place === true ? (
+                  {modalAgent.restauration_sur_place === 1 || modalAgent.restauration_sur_place === "1" || modalAgent.restauration_sur_place === true ? (
                     <>
                       <span style={{ color: '#28a745', fontSize: '1.2em' }}>✅</span>
                       <span style={{ color: '#28a745', fontWeight: 500 }}>Oui</span>
@@ -796,8 +782,9 @@ export default function GestionPage() {
               </button>
               <button 
                 onClick={() => {
+                  const codePersonnel = modalAgent.code_personnel;
                   setModalAgent(null);
-                  handleSupprimer(modalAgent.code_personnel);
+                  handleSupprimer(codePersonnel);
                 }}
                 disabled={loading}
                 style={{
