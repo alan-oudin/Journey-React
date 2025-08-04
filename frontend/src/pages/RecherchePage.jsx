@@ -235,11 +235,11 @@ export default function RecherchePage() {
                                     <div style={{padding: '12px', border: '1px solid #e0e0e0', borderRadius: '6px'}}>
                                         <div style={{fontWeight: 'bold', marginBottom: '4px'}}>⏰ Créneau</div>
                                         <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                            <span>{agentTrouve.heure_arrivee < '12:00' ? '🌅' : '🌆'}</span>
+                                            <span>{agentTrouve.heure_arrivee < '13:00' ? '🌅' : '🌆'}</span>
                                             <span>{agentTrouve.heure_arrivee}</span>
                                         </div>
                                         <div style={{fontSize: '0.9em', color: '#666'}}>
-                                            {agentTrouve.heure_arrivee < '12:00' ? 'Matin (9h-11h40)' : 'Après-midi (13h-15h40)'}
+                                            {agentTrouve.heure_arrivee < '13:00' ? 'Matin (9h-12h40)' : 'Après-midi (13h-14h40)'}
                                         </div>
                                     </div>
 
