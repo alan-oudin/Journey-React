@@ -29,12 +29,20 @@
     "production": [
       ">0.2%",
       "not dead",
-      "not op_mini all"
+      "not op_mini all",
+      "Safari >= 12",
+      "iOS >= 12",
+      "Chrome >= 78",
+      "Firefox >= 72",
+      "Edge >= 79",
+      "Opera >= 65"
     ],
     "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
+      "last 2 chrome version",
+      "last 2 firefox version",
+      "last 2 safari version",
+      "last 2 edge version",
+      "last 2 opera version"
     ]
   }
 }

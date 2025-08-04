@@ -4,6 +4,10 @@ import './index.css';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import { defineCustomElements } from 'wcs-core/loader';
+// Importer les polyfills pour la compatibilité navigateur
+import './utils/polyfills';
+// Améliorer la compatibilité des icônes
+import './utils/iconFallback';
 
 defineCustomElements(window);
 

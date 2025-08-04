@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import StatCard from '../components/StatCard';
-import { apiGet, apiPost, apiPut, apiDelete } from '../api';
+import { apiGet, apiPut, apiDelete } from '../api';
 import { ENV_CONFIG } from '../config/environment';
 
 const STATUTS = [
