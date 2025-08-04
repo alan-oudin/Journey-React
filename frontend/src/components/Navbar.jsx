@@ -1,8 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {NavLink} from 'react-router-dom';
 
 export default function Navbar() {
-    const isAuthenticated = !!localStorage.getItem('token');
+    const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+
+    useEffect(() => {
+        // Fonction pour vérifier l'état d'authentification
+        const checkAuthentication = () => {
+            setIsAuthenticated(!!localStorage.getItem('token'));
+        };
+
+        // Écouter les changements du localStorage (connexion/déconnexion)
+        const handleStorageChange = () => {
+            checkAuthentication();
+        };
+        
+        // Écouter l'événement personnalisé pour les changements d'authentification
+        const handleAuthStateChange = () => {
+            checkAuthentication();
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('authStateChanged', handleAuthStateChange);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('authStateChanged', handleAuthStateChange);
+        };
+    }, []);
 
     return (
         <wcs-nav aria-label="Menu principal">

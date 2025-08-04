@@ -7,17 +7,7 @@ SUPPRESSION DU CHAMP SERVICE
 ========================================
 */
 
-// Définir les en-têtes CORS dès le début du script
-header("Access-Control-Allow-Origin: http://localhost:3000");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
-
-// Si c'est une requête OPTIONS (préflight), on arrête ici
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+// Les en-têtes CORS seront définis après la détection d'environnement
 
 // Fonction pour charger les variables d'environnement depuis un fichier .env
 function loadEnv($path) {
@@ -53,50 +43,56 @@ function loadEnv($path) {
     return true;
 }
 
-// Détecter l'environnement et charger le bon fichier .env
+// Charger le fichier .env unique
+$envFile = __DIR__ . '/../.env';
+if (!loadEnv($envFile)) {
+    error_log('Fichier .env non trouvé dans : ' . $envFile);
+}
+
+// Détecter automatiquement l'environnement selon l'host
 $environment = 'development';
-if (isset($_ENV['APP_ENV'])) {
-    $environment = $_ENV['APP_ENV'];
-} elseif (isset($_SERVER['HTTP_HOST'])) {
+$corsOrigin = 'http://localhost:3000';
+
+if (isset($_SERVER['HTTP_HOST'])) {
     $host = $_SERVER['HTTP_HOST'];
-    // Extraire le hostname sans le port
     $hostname = explode(':', $host)[0];
+    
+    // Si ce n'est pas localhost, c'est la production
     if (!in_array($hostname, ['localhost', '127.0.0.1']) && strpos($hostname, '.local') === false) {
         $environment = 'production';
+        $corsOrigin = 'https://tmtercvdl.sncf.fr';
     }
 }
 
-// Charger le fichier .env approprié
-$envFile = __DIR__ . "/../.env.$environment";
-if (!loadEnv($envFile)) {
-    $envFile = __DIR__ . '/../.env';
-    if (!loadEnv($envFile)) {
-        error_log('Aucun fichier .env trouvé. Utilisation des valeurs par défaut.');
-    }
-}
-
-// Configuration CORS basée sur l'environnement
-// En production, accepter les requêtes de tmtercvdl.sncf.fr
-// En développement, accepter les requêtes de localhost:3000
-$corsOrigin = $_ENV['CORS_ORIGIN'] ?? getenv('CORS_ORIGIN') ?? 'http://localhost:3000';
-
-// Si l'origine de la requête est https://tmtercvdl.sncf.fr, l'autoriser explicitement
+// Autoriser l'origine de la requête si elle correspond
 $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($requestOrigin === 'https://tmtercvdl.sncf.fr') {
-    $corsOrigin = 'https://tmtercvdl.sncf.fr';
+if ($requestOrigin === 'https://tmtercvdl.sncf.fr' || $requestOrigin === 'http://localhost:3000') {
+    $corsOrigin = $requestOrigin;
 }
 
 $appDebug = filter_var($_ENV['APP_DEBUG'] ?? getenv('APP_DEBUG') ?? true, FILTER_VALIDATE_BOOLEAN);
 
 // Log pour debugging
-if ($appDebug) {
-    error_log("Environment detected: $environment");
-    error_log("CORS Origin: $corsOrigin");
-    error_log("Request Origin: $requestOrigin");
-    error_log("HTTP Host: " . ($_SERVER['HTTP_HOST'] ?? 'undefined'));
-}
+error_log("=== CORS DEBUG START ===");
+error_log("Environment detected: $environment");
+error_log("CORS Origin: $corsOrigin");
+error_log("Request Origin: $requestOrigin");
+error_log("HTTP Host: " . ($_SERVER['HTTP_HOST'] ?? 'undefined'));
+error_log("Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'undefined'));
+error_log("Path: " . ($_GET['path'] ?? 'undefined'));
+error_log("=== CORS DEBUG END ===");
 
-// Les en-têtes CORS sont maintenant définis au début du script
+// Définir les en-têtes CORS basés sur l'environnement détecté
+header("Access-Control-Allow-Origin: $corsOrigin");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE, PUT");
+
+// Si c'est une requête OPTIONS (préflight), on arrête ici
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 // Démarrer la capture de sortie pour éviter les problèmes de headers
 ob_start();
@@ -726,7 +722,7 @@ try {
 
         case 'export':
             if ($method === 'GET') {
-                // Exporter toutes les données en CSV (sans service)
+                // Exporter toutes les données en CSV (avec note et restauration)
                 $stmt = $pdo->query("
                     SELECT 
                         code_personnel,
@@ -742,6 +738,11 @@ try {
                         END as periode,
                         statut,
                         heure_validation,
+                        CASE 
+                            WHEN restauration_sur_place = 1 THEN 'Oui'
+                            ELSE 'Non'
+                        END as restauration_sur_place,
+                        note,
                         date_inscription,
                         updated_at
                     FROM agents_inscriptions 
@@ -750,7 +751,7 @@ try {
 
                 $agents = $stmt->fetchAll();
 
-                // Headers CSV (sans service)
+                // Headers CSV (avec note et restauration)
                 header('Content-Type: text/csv; charset=utf-8');
                 header('Content-Disposition: attachment; filename="inscriptions_journee_proches_' . date('Y-m-d_H-i') . '.csv"');
                 header('Cache-Control: max-age=0');
@@ -761,7 +762,7 @@ try {
                 // BOM pour UTF-8
                 fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
-                // En-têtes (sans service)
+                // En-têtes (avec note et restauration)
                 fputcsv($output, [
                     'Code Personnel',
                     'Nom',
@@ -772,11 +773,13 @@ try {
                     'Période',
                     'Statut',
                     'Heure Pointage',
+                    'Restauration Sur Place',
+                    'Note',
                     'Date Inscription',
                     'Dernière Modification'
                 ], ';');
 
-                // Données (sans service)
+                // Données (avec note et restauration)
                 foreach ($agents as $agent) {
                     fputcsv($output, [
                         $agent['code_personnel'],
@@ -788,6 +791,8 @@ try {
                         $agent['periode'],
                         ucfirst($agent['statut']),
                         $agent['heure_validation'] ? date('d/m/Y H:i', strtotime($agent['heure_validation'])) : '',
+                        $agent['restauration_sur_place'],
+                        $agent['note'] ? $agent['note'] : '',
                         date('d/m/Y H:i', strtotime($agent['date_inscription'])),
                         $agent['updated_at'] ? date('d/m/Y H:i', strtotime($agent['updated_at'])) : ''
                     ], ';');
@@ -935,11 +940,18 @@ try {
             if ($method === 'GET') {
                 // Lister tous les administrateurs
                 $stmt = $pdo->query("
-                    SELECT id, username, role, created_at, updated_at 
+                    SELECT id, username, role, created_at, updated_at,
+                           CASE WHEN id = 1 THEN 1 ELSE 0 END as is_default
                     FROM admins 
                     ORDER BY created_at DESC
                 ");
                 $admins = $stmt->fetchAll();
+                
+                // Convertir is_default en boolean
+                foreach ($admins as &$admin) {
+                    $admin['is_default'] = (bool)$admin['is_default'];
+                }
+                
                 echo json_encode($admins);
                 
             } elseif ($method === 'POST') {
@@ -1017,6 +1029,132 @@ try {
                 
             } else {
                 throw new Exception('Méthode non autorisée pour /admins');
+            }
+            break;
+
+        case 'admins/set-default':
+            // Vérifier l'authentification pour les routes admin
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? '';
+            
+            if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token d\'authentification requis']);
+                return;
+            }
+            
+            $token = $matches[1];
+            try {
+                $payload = json_decode(base64_decode($token), true);
+                if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                    throw new Exception('Token expiré');
+                }
+                
+                $stmt = $pdo->prepare("SELECT id, role FROM admins WHERE id = ? AND username = ?");
+                $stmt->execute([$payload['sub'], $payload['username']]);
+                $currentUser = $stmt->fetch();
+                
+                if (!$currentUser) {
+                    throw new Exception('Utilisateur non trouvé');
+                }
+            } catch (Exception $e) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token invalide']);
+                return;
+            }
+            
+            if ($method === 'POST') {
+                // Changer l'administrateur par défaut
+                $input = json_decode(file_get_contents('php://input'), true);
+                
+                if (!$input || !isset($input['id'])) {
+                    throw new Exception('ID de l\'administrateur requis');
+                }
+                
+                $newDefaultId = $input['id'];
+                
+                // Vérifier que l'administrateur existe
+                $stmt = $pdo->prepare("SELECT username FROM admins WHERE id = ?");
+                $stmt->execute([$newDefaultId]);
+                $newAdmin = $stmt->fetch();
+                
+                if (!$newAdmin) {
+                    throw new Exception('Administrateur non trouvé');
+                }
+                
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // Nouvelle approche: utiliser des noms temporaires pour éviter les conflits de contraintes
+                    
+                    // 1. Sauvegarder les données de l'ancien admin par défaut
+                    $stmt = $pdo->prepare("SELECT username, password, role FROM admins WHERE id = 1");
+                    $stmt->execute();
+                    $oldDefault = $stmt->fetch();
+                    
+                    // 2. Sauvegarder les données du nouveau admin par défaut
+                    $stmt = $pdo->prepare("SELECT username, password, role FROM admins WHERE id = ?");
+                    $stmt->execute([$newDefaultId]);
+                    $newDefault = $stmt->fetch();
+                    
+                    // 3. Créer des noms temporaires uniques
+                    $tempName1 = 'temp_' . time() . '_1';
+                    $tempName2 = 'temp_' . time() . '_2';
+                    
+                    // 4. Mettre des noms temporaires pour éviter les conflits
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ? WHERE id = 1");
+                    $stmt->execute([$tempName1]);
+                    
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ? WHERE id = ?");
+                    $stmt->execute([$tempName2, $newDefaultId]);
+                    
+                    // 5. Maintenant échanger les vraies données
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ?, password = ?, role = ? WHERE id = 1");
+                    $stmt->execute([$newDefault['username'], $newDefault['password'], $newDefault['role']]);
+                    
+                    $stmt = $pdo->prepare("UPDATE admins SET username = ?, password = ?, role = ? WHERE id = ?");
+                    $stmt->execute([$oldDefault['username'], $oldDefault['password'], $oldDefault['role'], $newDefaultId]);
+                    
+                    $pdo->commit();
+                    
+                    // Régénérer le token pour l'utilisateur connecté si ses données ont changé
+                    $newToken = null;
+                    if ($currentUser['id'] == 1 || $currentUser['id'] == $newDefaultId) {
+                        // L'utilisateur connecté a été affecté par l'échange, régénérer son token
+                        $stmt = $pdo->prepare("SELECT id, username, role FROM admins WHERE id = ?");
+                        $stmt->execute([$currentUser['id']]);
+                        $updatedUser = $stmt->fetch();
+                        
+                        if ($updatedUser) {
+                            $tokenPayload = [
+                                'sub' => $updatedUser['id'],
+                                'username' => $updatedUser['username'],
+                                'role' => $updatedUser['role'],
+                                'exp' => time() + 3600 // Expire dans 1 heure
+                            ];
+                            $newToken = base64_encode(json_encode($tokenPayload));
+                        }
+                    }
+                    
+                    $response = [
+                        'success' => true,
+                        'message' => "Administrateur par défaut changé vers {$newAdmin['username']}"
+                    ];
+                    
+                    if ($newToken) {
+                        $response['new_token'] = $newToken;
+                        $response['token_updated'] = true;
+                    }
+                    
+                    echo json_encode($response);
+                    
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    throw new Exception('Erreur lors du changement: ' . $e->getMessage());
+                }
+                
+            } else {
+                throw new Exception('Méthode non autorisée pour /admins/set-default');
             }
             break;
 

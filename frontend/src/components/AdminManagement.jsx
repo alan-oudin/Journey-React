@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { apiGet, apiPost } from '../api';
+import { apiGet, apiPost, apiDelete } from '../api';
 
 export default function AdminManagement() {
   const [admins, setAdmins] = useState([]);
@@ -25,7 +25,18 @@ export default function AdminManagement() {
         setAdmins(data);
       }
     } catch (error) {
-      showAlert('Erreur lors du chargement des administrateurs', 'error');
+      if (error.message.includes('401') || error.message.includes('Token')) {
+        // Token expiré, rediriger vers la connexion
+        localStorage.removeItem('token');
+        window.dispatchEvent(new CustomEvent('authStateChanged'));
+        showAlert('Session expirée, veuillez vous reconnecter', 'error');
+        // Redirection vers la page de connexion après un délai
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        showAlert('Erreur lors du chargement des administrateurs', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -56,17 +67,52 @@ export default function AdminManagement() {
     }
   };
 
-  const handleDeleteAdmin = async (adminId, username) => {
+  const handleDeleteAdmin = async (adminId, username, isDefault = false) => {
+    if (isDefault) {
+      showAlert('Impossible de supprimer l\'administrateur par défaut', 'error');
+      return;
+    }
+    
     if (!window.confirm(`Supprimer l'administrateur "${username}" ?`)) return;
     
     setLoading(true);
     try {
-      const data = await apiGet('admins', { id: adminId, _method: 'DELETE' });
+      const data = await apiDelete('admins', { id: adminId });
       if (data.success) {
         showAlert('Administrateur supprimé avec succès', 'success');
         fetchAdmins();
       } else {
         showAlert(data.error || 'Erreur lors de la suppression', 'error');
+      }
+    } catch (error) {
+      const errorMessage = error.message.includes('administrateur par défaut') 
+        ? 'Impossible de supprimer l\'administrateur par défaut'
+        : 'Erreur de connexion au serveur';
+      showAlert(errorMessage, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetDefaultAdmin = async (adminId, username) => {
+    if (!window.confirm(`Définir "${username}" comme administrateur par défaut ?`)) return;
+    
+    setLoading(true);
+    try {
+      const data = await apiPost('admins/set-default', { id: adminId });
+      if (data.success) {
+        // Si un nouveau token est fourni, le mettre à jour
+        if (data.new_token) {
+          localStorage.setItem('token', data.new_token);
+          // Déclencher un événement pour mettre à jour l'état d'authentification
+          window.dispatchEvent(new CustomEvent('authStateChanged'));
+          showAlert('Administrateur par défaut modifié avec succès (token mis à jour)', 'success');
+        } else {
+          showAlert('Administrateur par défaut modifié avec succès', 'success');
+        }
+        fetchAdmins();
+      } else {
+        showAlert(data.error || 'Erreur lors du changement', 'error');
       }
     } catch (error) {
       showAlert('Erreur de connexion au serveur', 'error');
@@ -81,7 +127,7 @@ export default function AdminManagement() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ alignItems: 'center', marginBottom: '20px' }}>
         <h3>👥 Gestion des administrateurs</h3>
         <wcs-button 
           color="primary" 
@@ -167,7 +213,7 @@ export default function AdminManagement() {
 
       {/* Liste des administrateurs */}
       <wcs-card>
-        <div style={{ padding: '20px' }}>
+        <div className="admin-list" style={{ padding: '20px' }}>
           <h4>Liste des administrateurs</h4>
           {loading && <wcs-spinner style={{ display: 'block', margin: '16px auto' }} />}
           
@@ -178,34 +224,63 @@ export default function AdminManagement() {
           )}
           
           {!loading && admins.length > 0 && (
-            <div style={{ display: 'grid', gap: '12px' }}>
+            <div className="admin-list-card" style={{ display: 'grid', gap: '12px' }}>
               {admins.map(admin => (
-                <div 
+                <div className="admin-card"
                   key={admin.id}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: '12px 16px',
+                    padding: '12px 5px',
                     backgroundColor: '#f8f9fa',
                     borderRadius: '6px',
-                    border: '1px solid #e9ecef'
+                    border: '1px solid #e9ecef',
+                    gap: '30px',
+                    flexWrap: "wrap"
                   }}
                 >
+                  <div style={{ fontWeight: 'bold' }}>
+                    {admin.username}
+                    {admin.is_default && (
+                        <span style={{
+                          marginLeft: '8px',
+                          fontSize: '0.8em',
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          padding: '2px 6px',
+                          borderRadius: '3px'
+                        }}>
+                          Admin par défaut
+                        </span>
+                    )}
+                  </div>
                   <div>
-                    <div style={{ fontWeight: 'bold' }}>{admin.username}</div>
                     <div style={{ fontSize: '0.9em', color: '#666' }}>
                       Rôle: {admin.role} • Créé le: {new Date(admin.created_at).toLocaleDateString('fr-FR')}
                     </div>
                   </div>
-                  <wcs-button 
-                    color="danger" 
-                    size="s"
-                    onClick={() => handleDeleteAdmin(admin.id, admin.username)}
-                    disabled={loading || admin.id === 1} // Protéger l'admin par défaut
-                  >
-                    🗑️ Supprimer
-                  </wcs-button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {!admin.is_default && (
+                      <wcs-button 
+                        color="info" 
+                        size="s"
+                        onClick={() => handleSetDefaultAdmin(admin.id, admin.username)}
+                        disabled={loading}
+                        title="Définir comme administrateur par défaut"
+                      >
+                        ⭐ Définir par défaut
+                      </wcs-button>
+                    )}
+                    <wcs-button 
+                      color="danger" 
+                      size="s"
+                      onClick={() => handleDeleteAdmin(admin.id, admin.username, admin.is_default)}
+                      disabled={loading || admin.is_default} // Protéger l'admin par défaut
+                    >
+                      🗑️ Supprimer
+                    </wcs-button>
+                  </div>
                 </div>
               ))}
             </div>

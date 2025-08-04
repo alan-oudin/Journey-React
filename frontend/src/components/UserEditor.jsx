@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { apiGet, apiPost } from '../api';
+import { apiGet, apiPost, apiPut, apiDelete } from '../api';
 
 const STATUTS = [
   { value: 'inscrit', label: 'Inscrit' },
@@ -187,13 +187,12 @@ export default function UserEditor() {
 
     setLoading(true);
     try {
-      const data = await apiPost('agents', {
-        code: selectedAgent.code_personnel,
-        _method: 'PUT',
+      // Utiliser apiPut pour mettre à jour l'agent avec la méthode PUT
+      const data = await apiPut('agents', {
         ...editForm,
         restauration_sur_place: editForm.restauration_sur_place ? 1 : 0,
         nombre_proches: parseInt(editForm.nombre_proches)
-      });
+      }, { code: selectedAgent.code_personnel });
       
       if (data.success) {
         showAlert('Informations mises à jour avec succès', 'success');
@@ -202,6 +201,36 @@ export default function UserEditor() {
         fetchAgents(); // Rafraîchir la liste
       } else {
         showAlert(data.error || 'Erreur lors de la mise à jour', 'error');
+      }
+    } catch (error) {
+      showAlert(error.message || 'Erreur de connexion au serveur', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAgent = async (agent) => {
+    if (!window.confirm(`Supprimer définitivement l'agent "${agent.prenom} ${agent.nom}" (${agent.code_personnel}) ?\n\nCette action est irréversible.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await apiDelete('agents', { code: agent.code_personnel });
+      
+      if (data.success) {
+        showAlert(`Agent ${agent.prenom} ${agent.nom} supprimé avec succès`, 'success');
+        
+        // Si l'agent supprimé était sélectionné, le désélectionner
+        if (selectedAgent && selectedAgent.code_personnel === agent.code_personnel) {
+          setSelectedAgent(null);
+          setSearchCode('');
+          setEditMode(false);
+        }
+        
+        fetchAgents(); // Rafraîchir la liste
+      } else {
+        showAlert(data.error || 'Erreur lors de la suppression', 'error');
       }
     } catch (error) {
       showAlert(error.message || 'Erreur de connexion au serveur', 'error');
@@ -312,7 +341,7 @@ export default function UserEditor() {
       {/* Informations de l'agent sélectionné */}
       {selectedAgent && (
         <wcs-card style={{ marginBottom: '24px', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="information-agent" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h4>Informations de l'agent</h4>
             <div style={{ display: 'flex', gap: '8px' }}>
               <wcs-button 
@@ -335,7 +364,7 @@ export default function UserEditor() {
                 {editMode ? 'Annuler' : '✏️ Modifier'}
               </wcs-button>
               {editMode && (
-                <wcs-button 
+                <wcs-button
                   color="primary"
                   size="s"
                   onClick={handleUpdateAgent}
@@ -344,10 +373,18 @@ export default function UserEditor() {
                   {loading ? <wcs-spinner size="small" /> : 'Sauvegarder'}
                 </wcs-button>
               )}
+              <wcs-button 
+                color="danger"
+                size="s"
+                onClick={() => handleDeleteAgent(selectedAgent)}
+                disabled={loading}
+              >
+                🗑️ Supprimer
+              </wcs-button>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: '16px', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+          <div style={{ display: 'grid', gap: '16px' }}>
             {/* Code Personnel (non modifiable) */}
             <wcs-form-field label="Code Personnel">
               <wcs-input
@@ -554,26 +591,37 @@ export default function UserEditor() {
                         </span>
                       </td>
                       <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                        <wcs-button
-                          size="s"
-                          shape="outline"
-                          onClick={() => {
-                            setSearchCode(agent.code_personnel);
-                            setSelectedAgent(agent);
-                            setEditForm({
-                              nom: agent.nom || '',
-                              prenom: agent.prenom || '',
-                              nombre_proches: agent.nombre_proches || 0,
-                              heure_arrivee: agent.heure_arrivee || '',
-                              statut: agent.statut || 'inscrit',
-                              restauration_sur_place: agent.restauration_sur_place === 1 || agent.restauration_sur_place === '1' || agent.restauration_sur_place === true,
-                              note: agent.note || ''
-                            });
-                            setEditMode(false);
-                          }}
-                        >
-                          Sélectionner
-                        </wcs-button>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                          <wcs-button
+                            size="s"
+                            shape="outline"
+                            onClick={() => {
+                              setSearchCode(agent.code_personnel);
+                              setSelectedAgent(agent);
+                              setEditForm({
+                                nom: agent.nom || '',
+                                prenom: agent.prenom || '',
+                                nombre_proches: agent.nombre_proches || 0,
+                                heure_arrivee: agent.heure_arrivee || '',
+                                statut: agent.statut || 'inscrit',
+                                restauration_sur_place: agent.restauration_sur_place === 1 || agent.restauration_sur_place === '1' || agent.restauration_sur_place === true,
+                                note: agent.note || ''
+                              });
+                              setEditMode(false);
+                            }}
+                          >
+                            Sélectionner
+                          </wcs-button>
+                          <wcs-button
+                            size="s"
+                            color="danger"
+                            onClick={() => handleDeleteAgent(agent)}
+                            disabled={loading}
+                            title={`Supprimer ${agent.prenom} ${agent.nom}`}
+                          >
+                            🗑️
+                          </wcs-button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -646,7 +694,7 @@ export default function UserEditor() {
             ) : (
               <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                 {/* Créneaux Matin */}
-                <div style={{ flex: 1, minWidth: 350 }}>
+                <div style={{ flex: 1, minWidth: 300 }}>
                   <h4 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
                     🌅 Créneaux Matin (9h00 - 11h40)
                   </h4>
@@ -709,7 +757,7 @@ export default function UserEditor() {
                 </div>
                 
                 {/* Créneaux Après-midi */}
-                <div style={{ flex: 1, minWidth: 350 }}>
+                <div style={{ flex: 1, minWidth: 300 }}>
                   <h4 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
                     🌆 Créneaux Après-midi (13h00 - 15h40)
                   </h4>

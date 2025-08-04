@@ -5,18 +5,18 @@ Application Journey avec configuration automatique multi-environnements.
 ## 🎯 Environnements Supportés
 
 ### 🟢 Développement (WAMP)
-**Configuration automatique via `.env.development`**
+**Configuration automatique via `backend/.env`**
 - **Frontend** : `http://localhost:3000` (React dev server)
 - **Backend** : `http://localhost:8080/journey/backend/public/api.php`
 - **Base de données** : `localhost:3306` (WAMP MySQL)
-- **CORS** : Configuré pour `localhost:3000`
+- **CORS** : Auto-détecté pour `localhost:3000`
 
 ### 🔴 Production (XAMPP)
-**Configuration automatique via `.env.production`**
+**Configuration automatique via `backend/.env`**
 - **Frontend** : `https://tmtercvdl.sncf.fr/journey`
 - **Backend** : `http://127.0.0.1/journey/backend/public/api.php`
 - **Base de données** : `127.0.0.1:3306` (XAMPP MySQL)
-- **CORS** : Configuré pour `tmtercvdl.sncf.fr`
+- **CORS** : Auto-détecté pour `tmtercvdl.sncf.fr`
 
 > **✨ Nouveau** : Plus besoin de modifier manuellement les URLs ! La configuration se fait automatiquement selon l'environnement détecté.
 
@@ -27,10 +27,7 @@ Application Journey avec configuration automatique multi-environnements.
 ### 1. Préparation Locale
 
 ```bash
-# Vérifier la configuration
-switch-env.bat prod
-
-# Build du frontend
+# Build du frontend (auto-détection production)
 cd frontend
 npm run build
 
@@ -45,6 +42,7 @@ composer install --no-dev --optimize-autoloader
 ```
 C:\xampp\htdocs\journey\
 ├── index.html                    # Depuis frontend/build/
+├── .htaccess                     # Depuis journey
 ├── static/                       # Depuis frontend/build/static/
 ├── fonts/                        # Depuis frontend/build/fonts/  
 ├── logo/                         # Depuis frontend/build/logo/
@@ -52,7 +50,7 @@ C:\xampp\htdocs\journey\
 ├── robots.txt                    # Depuis frontend/build/
 ├── favicon.ico                   # Depuis frontend/build/
 └── backend/
-    ├── .env.production           # Configuration production
+    ├── .env                      # Configuration backend unique (BDD, CORS)
     ├── public/
     │   └── api.php               # API principale
     ├── database/
@@ -60,21 +58,39 @@ C:\xampp\htdocs\journey\
     └── vendor/                   # Dépendances Composer
 ```
 
+**⚠️ Important : Différence entre les fichiers `.env` :**
+
+📁 **Backend `.env`** (à transférer) :
+- `backend/.env` → Configuration PHP unique : base de données, CORS, debug
+- Auto-détection de l'environnement selon l'host (localhost = dev, autre = prod)
+- Utilisé par `api.php` sur le serveur pour se connecter à MySQL
+- **OBLIGATOIRE** sur le serveur
+
+📁 **Frontend `.env`** (SUPPRIMÉS) :
+- Plus de fichiers `.env` dans le frontend
+- Configuration automatique via `environment.js`
+- Auto-détection des ports disponibles (8080 puis 80 en fallback)
+
 ### 3. Configuration Automatique
 
 Les fichiers de configuration sont **automatiquement** utilisés :
 
-**Backend** (`.env.production`) :
+**Backend** (`backend/.env`) :
 ```env
-# Configuration PRODUCTION - XAMPP sur serveur
-DB_HOST=127.0.0.1
+# Configuration Journey - Auto-détection local/prod
+DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=journee_proches
 DB_USER=root
 DB_PASSWORD=
-APP_ENV=production
-APP_DEBUG=false
-CORS_ORIGIN=https://tmtercvdl.sncf.fr
+
+# Configuration générale
+APP_DEBUG=true
+APP_TIMEZONE=Europe/Paris
+
+# CORS - automatiquement adapté selon l'environnement détecté
+# Local: http://localhost:3000
+# Prod: https://tmtercvdl.sncf.fr
 ```
 
 **Frontend** : Configuration automatique dans `environment.js`
@@ -120,7 +136,7 @@ curl http://127.0.0.1/journey/backend/public/api.php?path=test
 ├── index.html          # Build React
 ├── static/             # Assets React
 ├── backend/
-│   ├── .env.production # À adapter selon serveur
+│   ├── .env           # Configuration unique auto-adaptative
 │   └── public/api.php  # API
 └── vendor/             # Dependencies PHP
 ```
@@ -140,8 +156,7 @@ curl http://127.0.0.1/journey/backend/public/api.php?path=test
 
 # Sécurité - Protection des fichiers sensibles
 <Files ".env*">
-    Order allow,deny
-    Deny from all
+    Require all denied
 </Files>
 ```
 
@@ -153,7 +168,7 @@ curl http://127.0.0.1/journey/backend/public/api.php?path=test
 
 ### Variables d'Environnement
 
-**Modifier `.env.production` selon votre serveur :**
+**Modifier `backend/.env` selon votre serveur :**
 ```env
 # Base de données du serveur
 DB_HOST=127.0.0.1           # ou IP du serveur MySQL
@@ -188,7 +203,7 @@ production: {
 - [ ] `npm run build` exécuté
 - [ ] `composer install --no-dev` exécuté
 - [ ] Base de données importée
-- [ ] `.env.production` configuré
+- [ ] `backend/.env` configuré
 
 ### Tests Post-Déploiement
 - [ ] Page d'accueil se charge : `/journey`
@@ -210,17 +225,24 @@ production: {
 ### Problèmes Courants
 
 **Erreur CORS :**
-- Vérifier que `CORS_ORIGIN` dans `.env.production` correspond au domaine frontend
+- Vérifier que `CORS_ORIGIN` dans `.env` correspond au domaine frontend
 - La gestion CORS est automatique dans `api.php`
 
 **API 500 :**
+- ⚠️ **Problème fréquent** : Directives `.htaccess` obsolètes
+  - Apache 2.4+ ne supporte plus `Order allow,deny`
+  - Utiliser `Require all denied` à la place
 - Vérifier les permissions PHP
-- Consulter les logs Apache/PHP
+- Consulter les logs Apache/PHP : `tail -f C:\wamp64\logs\apache_error.log`
 - Vérifier la connexion base de données
 
 **Routes React 404 :**
 - Vérifier la configuration `.htaccess`
 - S'assurer que `mod_rewrite` est activé
+
+**Configuration WAMP :**
+- Port 80 souvent bloqué par Windows : utiliser le port 8080
+- Vérifier que Apache WAMP fonctionne : `netstat -an | findstr :8080`
 
 ### Logs Utiles
 
@@ -239,9 +261,9 @@ curl -v http://127.0.0.1/journey/backend/public/api.php?path=test
 
 ## 📚 Documentation Complémentaire
 
-- **[README.md](README.md)** : Vue d'ensemble et installation
+- **[README.md](../README.md)** : Vue d'ensemble et installation
 - **[ENVIRONMENTS.md](ENVIRONMENTS.md)** : Configuration détaillée des environnements
 - **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** : Guide d'utilisation admin
-- **[STRUCTURE_CLEAN.md](STRUCTURE_CLEAN.md)** : Architecture technique
+- **[CHANGELOG.md](CHANGELOG.md)** : Historique des modifications
 
 **🎯 L'objectif : Un déploiement simple avec une configuration automatique !**

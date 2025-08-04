@@ -7,17 +7,17 @@ Application web moderne pour la gestion des inscriptions à la journée des proc
 ```
 journey/
 ├── README.md                    # Documentation principale
-├── ADMIN_GUIDE.md              # Guide administrateur  
-├── DEPLOIEMENT_PRODUCTION.md   # Guide de déploiement
-├── ENVIRONMENTS.md             # Configuration multi-environnements
-├── STRUCTURE_CLEAN.md          # Documentation de l'architecture
-├── api-test.js                 # Script de test de l'API
-├── switch-env.bat/sh           # Scripts d'information environnements
+├── Docs/                        # 📚 Documentation complète
+│   ├── ADMIN_GUIDE.md          # Guide administrateur
+│   ├── CHANGELOG.md            # Historique des modifications
+│   ├── DEPLOIEMENT_PRODUCTION.md # Guide de déploiement
+│   └── ENVIRONMENTS.md         # Configuration multi-environnements
+├── script/                      # 🛠️ Scripts utiles
+│   └── api-test.js             # Script de test de l'API
 ├── package.json                # Dependencies globales (node-fetch, wcs)
 │
 ├── backend/                    # 🔧 API PHP + Base de données
-│   ├── .env.development        # Configuration WAMP (dev)
-│   ├── .env.production         # Configuration XAMPP (prod)
+│   ├── .env                    # Configuration unique auto-adaptative
 │   ├── .env.example            # Exemple de configuration
 │   ├── add_admin.php           # Script CLI pour ajouter des admins
 │   ├── composer.json           # Dependencies PHP
@@ -88,10 +88,7 @@ backend/database/import_database.bat
 ### 3. Lancement Développement (WAMP)
 
 ```bash
-# Vérifier la configuration
-switch-env.bat dev
-
-# Lancer React
+# Lancer React - Configuration automatique !
 cd frontend && npm start
 
 # API accessible sur : http://localhost:8080/journey/backend/public/api.php
@@ -101,10 +98,7 @@ cd frontend && npm start
 ### 4. Build Production (XAMPP)
 
 ```bash
-# Vérifier la configuration  
-switch-env.bat prod
-
-# Build React
+# Build React - Configuration automatique !
 cd frontend && npm run build
 
 # Déployer les fichiers build/ sur le serveur XAMPP
@@ -137,10 +131,10 @@ cd frontend && npm run build
 ## 🔒 Sécurité & Configuration
 
 ### Variables d'Environnement
-- **Development** : `.env.development` (WAMP localhost)
-- **Production** : `.env.production` (XAMPP serveur)
-- **CORS automatique** : Configuré selon l'environnement
-- **Base de données** : Credentials séparés par environnement
+- **Fichier unique** : `backend/.env` (auto-adaptatif local/prod)
+- **Auto-détection** : Environnement détecté selon l'hostname
+- **CORS automatique** : Configuré selon l'hostname détecté
+- **Frontend intelligent** : Auto-détection des ports disponibles (8080 puis 80)
 
 ### Sécurité
 - ✅ Validation côté serveur (codes personnels, capacités)
@@ -151,10 +145,16 @@ cd frontend && npm run build
 
 ## 📚 Documentation
 
-- **[ENVIRONMENTS.md](ENVIRONMENTS.md)** : Configuration des environnements
-- **[DEPLOIEMENT_PRODUCTION.md](DEPLOIEMENT_PRODUCTION.md)** : Guide de déploiement
-- **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** : Guide administrateur
-- **[STRUCTURE_CLEAN.md](STRUCTURE_CLEAN.md)** : Architecture détaillée
+- **[ENVIRONMENTS.md](Docs/ENVIRONMENTS.md)** : Configuration des environnements
+- **[DEPLOIEMENT_PRODUCTION.md](Docs/DEPLOIEMENT_PRODUCTION.md)** : Guide de déploiement  
+- **[ADMIN_GUIDE.md](Docs/ADMIN_GUIDE.md)** : Guide administrateur
+
+### 🛠️ Scripts Utiles
+- **[api-test.js](script/api-test.js)** : Script de test de l'API
+
+### 📁 Organisation
+- **[Docs/](Docs/)** : Toute la documentation technique
+- **[script/](script/)** : Scripts utilitaires
 
 ## Contribution
 

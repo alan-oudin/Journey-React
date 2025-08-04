@@ -12,9 +12,17 @@ import { AlertDrawerProvider } from './contexts/AlertContext.tsx';
 import { defineCustomElements } from 'wcs-react';
 import './index.css';
 
-
-
 defineCustomElements();
+
+// Détecter l'environnement et définir le basename approprié
+const getBasename = () => {
+  // En développement (localhost:3000), pas de basename
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return '';
+  }
+  // En production, utiliser /journey
+  return '/journey';
+};
 
 export default function App() {
   return (
@@ -25,7 +33,7 @@ export default function App() {
         timeout: 5000
       }}
     >
-      <Router basename="/journey">
+      <Router basename={getBasename()}>
         <div className="app-layout">
           <div className="header-area"><Header /></div>
           <div className="nav-area"><Navbar /></div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import StatCard from '../components/StatCard';
-import { apiGet, apiPost } from '../api';
+import { apiGet, apiPost, apiPut, apiDelete } from '../api';
 import { ENV_CONFIG } from '../config/environment';
 
 const STATUTS = [
@@ -138,10 +138,7 @@ export default function GestionPage() {
     if (!window.confirm('Supprimer cet agent ?')) return;
     setLoading(true);
     try {
-      const data = await apiGet('agents', { 
-        code: codePersonnel,
-        _method: 'DELETE'
-      });
+      const data = await apiDelete('agents', { code: codePersonnel });
       
       if (data.success) {
         setAlert('success', {
@@ -170,10 +167,10 @@ export default function GestionPage() {
   const handleChangeStatut = async (codePersonnel, nouveauStatut) => {
     setLoading(true);
     try {
-      const data = await apiPost('agents', {
-        code: codePersonnel,
-        _method: 'PUT',
+      const data = await apiPut('agents', {
         statut: nouveauStatut
+      }, {
+        code: codePersonnel
       });
       
       if (data.success) {
@@ -235,10 +232,10 @@ export default function GestionPage() {
     
     setActionLoading(true);
     try {
-      const data = await apiPost('agents', {
-        code: agent.code_personnel,
-        _method: 'PUT',
+      const data = await apiPut('agents', {
         note: null
+      }, {
+        code: agent.code_personnel
       });
       
       if (data.success) {
@@ -275,10 +272,10 @@ export default function GestionPage() {
     
     setActionLoading(true);
     try {
-      const data = await apiPost('agents', {
-        code: modalAgent.code_personnel,
-        _method: 'PUT',
+      const data = await apiPut('agents', {
         note: noteText.trim()
+      }, {
+        code: modalAgent.code_personnel
       });
       
       if (data.success) {
@@ -378,33 +375,33 @@ export default function GestionPage() {
                   </wsc-card-header>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
-                <table style={{borderCollapse: 'collapse', width: '100%'}}>
-                  <thead>
-                    <tr>
-                      <th style={{padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Heure</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Agents</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Personnes</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Places libres</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {creneauxMatin.map(heure => {
-                      const info = creneaux.matin[heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
-                      return (
-                        <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
-                          <td style={{padding: '8px 12px', textAlign: 'left'}}>{heure}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.agents_inscrits}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.personnes_total}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.places_restantes}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>
-                            {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      <table style={{borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed'}}>
+                        <thead>
+                          <tr>
+                            <th style={{padding: '6px 8px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em', whiteSpace: 'nowrap'}}>Heure</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Ag.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Pers.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Libres</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Statut</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creneauxMatin.map(heure => {
+                            const info = creneaux.matin[heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
+                            return (
+                              <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
+                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>{heure}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.agents_inscrits}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.personnes_total}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.places_restantes}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.85em'}}>
+                                  {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                   </wsc-card-content>
                 </wsc-card-body>
               </wcs-card>
@@ -415,33 +412,33 @@ export default function GestionPage() {
                   </wsc-card-header>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
-                <table style={{borderCollapse: 'collapse', width: '100%'}}>
-                  <thead>
-                    <tr>
-                      <th style={{padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Heure</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Agents</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Personnes</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Places libres</th>
-                      <th style={{padding: '8px 12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold'}}>Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {creneauxApresMidi.map(heure => {
-                      const info = creneaux['apres-midi'][heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
-                      return (
-                        <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
-                          <td style={{padding: '8px 12px', textAlign: 'left'}}>{heure}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.agents_inscrits}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.personnes_total}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>{info.places_restantes}</td>
-                          <td style={{padding: '8px 12px', textAlign: 'center'}}>
-                            {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      <table style={{borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed'}}>
+                        <thead>
+                          <tr>
+                            <th style={{padding: '6px 8px', textAlign: 'left', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em', whiteSpace: 'nowrap'}}>Heure</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Ag.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Pers.</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Libres</th>
+                            <th style={{padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e0e0e0', fontWeight: 'bold', fontSize: '0.95em'}}>Statut</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creneauxApresMidi.map(heure => {
+                            const info = creneaux['apres-midi'][heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
+                            return (
+                              <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
+                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>{heure}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.agents_inscrits}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.personnes_total}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.places_restantes}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.85em'}}>
+                                  {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                   </wsc-card-content>
                 </wsc-card-body>
               </wcs-card>
@@ -453,9 +450,8 @@ export default function GestionPage() {
         
         <div className="form-right">
           <h3 style={{textAlign:'center'}}>Liste des agents inscrits</h3>
-          
+          <strong>Filtrer par statut :</strong>{' '}
           <div style={{margin: '24px 0'}}>
-            <strong>Filtrer par statut :</strong>{' '}
             <wcs-button-group>
               {STATUTS.map(s => (
                 <wcs-button
@@ -483,7 +479,7 @@ export default function GestionPage() {
                 minHeight: 'auto',
                 flexDirection: 'row',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1,justifyContent:'space-between',flexWrap: 'wrap' }}>
                   <div style={{ fontWeight: 500, minWidth: 120 }}>
                     {agent.nom} {agent.prenom}
                   </div>
@@ -522,14 +518,15 @@ export default function GestionPage() {
                       {STATUTS.find(s => s.value === agent.statut)?.label || agent.statut}
                     </span>
                   </div>
+                  <wcs-button
+                      size="s"
+                      shape="outline"
+                      onClick={() => setModalAgent(agent)}
+                  >
+                    Détails
+                  </wcs-button>
                 </div>
-                <wcs-button 
-                  size="s" 
-                  shape="outline"
-                  onClick={() => setModalAgent(agent)}
-                >
-                  Détails
-                </wcs-button>
+
               </wcs-card>
             ))}
           </div>
@@ -668,7 +665,7 @@ export default function GestionPage() {
               <div>
                 <strong>Restauration sur place :</strong>
                 <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {modalAgent.restauration_sur_place === 1 || modalAgent.restauration_sur_place === true ? (
+                  {modalAgent.restauration_sur_place === 1 || modalAgent.restauration_sur_place === "1" || modalAgent.restauration_sur_place === true ? (
                     <>
                       <span style={{ color: '#28a745', fontSize: '1.2em' }}>✅</span>
                       <span style={{ color: '#28a745', fontWeight: 500 }}>Oui</span>
@@ -785,8 +782,9 @@ export default function GestionPage() {
               </button>
               <button 
                 onClick={() => {
+                  const codePersonnel = modalAgent.code_personnel;
                   setModalAgent(null);
-                  handleSupprimer(modalAgent.code_personnel);
+                  handleSupprimer(codePersonnel);
                 }}
                 disabled={loading}
                 style={{
