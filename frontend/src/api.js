@@ -1,6 +1,20 @@
 // Utilitaire pour appeler l'API PHP
 import { ENV_CONFIG, devLog } from './config/environment';
 
+// Polyfill pour AbortSignal.timeout (compatible Safari ancien)
+function createTimeoutSignal(timeout) {
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    return AbortSignal.timeout(timeout);
+  }
+  
+  // Fallback pour navigateurs anciens
+  const controller = new AbortController();
+  setTimeout(() => {
+    controller.abort();
+  }, timeout);
+  return controller.signal;
+}
+
 // Auto-détection de l'URL API (teste les ports disponibles)
 let API_BASE = ENV_CONFIG.API_BASE_URL;
 let apiBaseResolved = false;
@@ -13,8 +27,7 @@ async function testApiConnection(url) {
     
     const response = await fetch(testUrl, {
       method: 'GET',
-      timeout: 3000,
-      signal: AbortSignal.timeout(3000)
+      signal: createTimeoutSignal(3000)
     });
     
     return response.status === 200 || response.status === 404; // 404 = API existe mais endpoint non trouvé
@@ -70,7 +83,7 @@ export async function apiGet(path = '', params = {}) {
   const response = await fetch(url, { 
     credentials: 'include',
     headers,
-    signal: AbortSignal.timeout(ENV_CONFIG.API_TIMEOUT)
+    signal: createTimeoutSignal(ENV_CONFIG.API_TIMEOUT)
   });
   
   if (!response.ok) throw new Error('Erreur API : ' + response.status);
@@ -98,7 +111,7 @@ export async function apiPost(path = '', data = {}) {
     headers,
     body: JSON.stringify(data),
     credentials: 'include',
-    signal: AbortSignal.timeout(ENV_CONFIG.API_TIMEOUT)
+    signal: createTimeoutSignal(ENV_CONFIG.API_TIMEOUT)
   });
   
   if (!response.ok) {
@@ -142,7 +155,7 @@ export async function apiPut(path = '', data = {}, params = {}) {
     headers,
     body: JSON.stringify(data),
     credentials: 'include',
-    signal: AbortSignal.timeout(ENV_CONFIG.API_TIMEOUT)
+    signal: createTimeoutSignal(ENV_CONFIG.API_TIMEOUT)
   });
   
   if (!response.ok) {
@@ -185,7 +198,7 @@ export async function apiDelete(path = '', params = {}) {
     method: 'DELETE',
     headers,
     credentials: 'include',
-    signal: AbortSignal.timeout(ENV_CONFIG.API_TIMEOUT)
+    signal: createTimeoutSignal(ENV_CONFIG.API_TIMEOUT)
   });
   
   if (!response.ok) {

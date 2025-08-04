@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { apiGet, apiPost, apiPut, apiDelete } from '../api';
+import { apiGet, apiPut, apiDelete } from '../api';
 
 const STATUTS = [
   { value: 'inscrit', label: 'Inscrit' },

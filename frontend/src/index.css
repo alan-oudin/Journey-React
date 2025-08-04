@@ -1,5 +1,7 @@
 @import "wcs-core/design-tokens/dist/sncf-voyageurs.css";
 @import "wcs-core/dist/wcs/wcs.css";
+/* Importer les styles de compatibilité navigateur */
+@import './styles/browser-compatibility.css';
 
 :root {
     --wcs-font-sans-serif: Avenir, 'Segoe UI', 'Roboto', 'Arial', sans-serif;

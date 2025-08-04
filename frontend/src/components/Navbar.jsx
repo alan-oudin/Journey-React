@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {NavLink} from 'react-router-dom';
+import { MaterialIconWithFallback } from '../utils/iconFallback';
 
 export default function Navbar() {
     const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
@@ -33,7 +34,7 @@ export default function Navbar() {
         <wcs-nav aria-label="Menu principal">
             <wcs-nav-item>
                 <NavLink to="/">
-                    <wcs-mat-icon icon="home"></wcs-mat-icon>
+                    <MaterialIconWithFallback icon="home" />
                     <span>Accueil</span>
                 </NavLink>
             </wcs-nav-item>
@@ -42,9 +43,9 @@ export default function Navbar() {
                     to="/recherche"
                     title={!isAuthenticated ? 'Connexion admin requise' : 'Recherche d\'agents'}
                 >
-                    <wcs-mat-icon icon="search"></wcs-mat-icon>
+                    <MaterialIconWithFallback icon="search" />
                     <span>Recherche</span>
-                    {!isAuthenticated && <wcs-mat-icon icon="lock" style={{fontSize: '0.8em'}} title="Connexion requise"></wcs-mat-icon>}
+                    {!isAuthenticated && <MaterialIconWithFallback icon="lock" size="s" title="Connexion requise" />}
                 </NavLink>
             </wcs-nav-item>
             <wcs-nav-item>
@@ -52,9 +53,9 @@ export default function Navbar() {
                     to="/admin"
                     title={!isAuthenticated ? 'Connexion admin requise' : 'Panneau d\'administration'}
                 >
-                    <wcs-mat-icon icon="admin_panel_settings"></wcs-mat-icon>
+                    <MaterialIconWithFallback icon="admin_panel_settings" />
                     <span>Admin</span>
-                    {!isAuthenticated && <wcs-mat-icon icon="lock" style={{fontSize: '0.8em'}} title="Connexion requise"></wcs-mat-icon>}
+                    {!isAuthenticated && <MaterialIconWithFallback icon="lock" size="s" title="Connexion requise" />}
                 </NavLink>
             </wcs-nav-item>
         </wcs-nav>

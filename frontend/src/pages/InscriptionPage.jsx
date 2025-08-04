@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { apiPost, apiGet } from '../api';
 import { useAlertDrawer } from '../contexts/AlertContext.tsx';
+import { MaterialIconWithFallback } from '../utils/iconFallback';
 
 export default function InscriptionPage() {
   const { showAlert } = useAlertDrawer();
@@ -393,10 +394,10 @@ export default function InscriptionPage() {
                           </div>
                           <div style={{ marginTop: 8 }}>
                             {form.heureArrivee === heure && (
-                              <wcs-mat-icon icon="check_circle" color="primary" size="m"></wcs-mat-icon>
+                              <MaterialIconWithFallback icon="check_circle" color="primary" size="m" />
                             )}
                             {form.heureArrivee !== heure && (
-                              <wcs-mat-icon icon="radio_button_unchecked" color="gray" size="m"></wcs-mat-icon>
+                              <MaterialIconWithFallback icon="radio_button_unchecked" color="gray" size="m" />
                             )}
                           </div>
                         </wcs-card>
@@ -419,10 +420,10 @@ export default function InscriptionPage() {
                           </div>
                           <div style={{ marginTop: 8 }}>
                             {form.heureArrivee === heure && (
-                              <wcs-mat-icon icon="check_circle" color="primary" size="m"></wcs-mat-icon>
+                              <MaterialIconWithFallback icon="check_circle" color="primary" size="m" />
                             )}
                             {form.heureArrivee !== heure && (
-                              <wcs-mat-icon icon="radio_button_unchecked" color="gray" size="m"></wcs-mat-icon>
+                              <MaterialIconWithFallback icon="radio_button_unchecked" color="gray" size="m" />
                             )}
                           </div>
                         </wcs-card>
