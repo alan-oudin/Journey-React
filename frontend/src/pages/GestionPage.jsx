@@ -371,7 +371,7 @@ export default function GestionPage() {
               <wcs-card mode="flat" style={{minWidth: 280, width: '100%', maxWidth: 400}}>
                 <wsc-card-body>
                   <wsc-card-header>
-                    <span style={{fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center', display: 'block',marginBlock:'15px'}}>🌅 Matin (9h00 - 11h40)</span>
+                    <span style={{fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center', display: 'block',marginBlock:'15px'}}>🌅 Matin (9h00 - 12h40)</span>
                   </wsc-card-header>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
@@ -496,7 +496,7 @@ export default function GestionPage() {
                     color: '#888',
                     minWidth: 80
                   }}>
-                    {agent.heure_arrivee < '12:00' ? '🌅 Matin' : '🌆 Après-midi'}
+                    {agent.heure_arrivee < '13:00' ? '🌅 Matin' : '🌆 Après-midi'}
                   </div>
                   <div style={{ minWidth: 100 }}>
                     <span style={{
@@ -599,10 +599,10 @@ export default function GestionPage() {
               <div>
                 <strong>Créneau d'arrivée :</strong>
                 <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>{modalAgent.heure_arrivee < '12:00' ? '🌅' : '🌆'}</span>
+                  <span>{modalAgent.heure_arrivee < '13:00' ? '🌅' : '🌆'}</span>
                   <span>{modalAgent.heure_arrivee}</span>
                   <span style={{ color: '#666' }}>
-                    ({modalAgent.heure_arrivee < '12:00' ? 'Matin' : 'Après-midi'})
+                    ({modalAgent.heure_arrivee < '13:00' ? 'Matin' : 'Après-midi'})
                   </span>
                 </div>
               </div>

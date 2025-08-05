@@ -9,10 +9,10 @@ const STATUTS = [
 ];
 
 const creneauxMatin = [
-  '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40'
+  '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40', '12:00', '12:20', '12:40'
 ];
 const creneauxApresMidi = [
-  '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00', '15:20', '15:40'
+  '13:00', '13:20', '13:40', '14:00', '14:20', '14:40'
 ];
 
 // const allCreneaux = [...creneauxMatin, ...creneauxApresMidi]; // Non utilisé actuellement
@@ -122,7 +122,7 @@ export default function UserEditor() {
 
   // Fonction pour calculer la disponibilité avec simulation du changement
   const getCreneauDisponibilite = (heure, nombreProches = 0) => {
-    const periode = heure < '12:00' ? 'matin' : 'apres-midi';
+    const periode = heure < '13:00' ? 'matin' : 'apres-midi';
     const info = creneaux[periode]?.[heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
     
     // Si c'est le créneau actuel de l'agent, on ne compte pas ses places
@@ -681,7 +681,7 @@ export default function UserEditor() {
               </div>
               {selectedAgent?.heure_arrivee && (
                 <div style={{ fontSize: '0.9em', color: '#666', marginTop: '4px' }}>
-                  Créneau actuel: {selectedAgent.heure_arrivee} ({selectedAgent.heure_arrivee < '12:00' ? 'Matin' : 'Après-midi'})
+                  Créneau actuel: {selectedAgent.heure_arrivee} ({selectedAgent.heure_arrivee < '13:00' ? 'Matin' : 'Après-midi'})
                 </div>
               )}
             </div>
@@ -696,7 +696,7 @@ export default function UserEditor() {
                 {/* Créneaux Matin */}
                 <div style={{ flex: 1, minWidth: 300 }}>
                   <h4 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    🌅 Créneaux Matin (9h00 - 11h40)
+                    🌅 Créneaux Matin (9h00 - 12h40)
                   </h4>
                   <div style={{ display: 'grid', gap: 8 }}>
                     {creneauxMatin.map(heure => {
@@ -759,7 +759,7 @@ export default function UserEditor() {
                 {/* Créneaux Après-midi */}
                 <div style={{ flex: 1, minWidth: 300 }}>
                   <h4 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    🌆 Créneaux Après-midi (13h00 - 15h40)
+                    🌆 Créneaux Après-midi (13h00 - 14h40)
                   </h4>
                   <div style={{ display: 'grid', gap: 8 }}>
                     {creneauxApresMidi.map(heure => {

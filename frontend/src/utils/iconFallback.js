@@ -41,7 +41,7 @@ const ICON_FALLBACKS = {
 };
 
 // Vérifier si les emojis sont supportés
-function isEmojiSupported() {
+export function supportsEmoji() {
   // Test simple pour voir si les emojis s'affichent correctement
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -61,7 +61,7 @@ function isEmojiSupported() {
 }
 
 // Détecter le navigateur
-function detectBrowser() {
+export function detectBrowser() {
   const userAgent = navigator.userAgent;
   
   if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
@@ -82,7 +82,7 @@ function detectBrowser() {
 // Obtenir l'icône appropriée selon le navigateur
 export function getIcon(iconKey, fallbackText = '') {
   const browser = detectBrowser();
-  const emojiSupported = isEmojiSupported();
+  const emojiSupported = supportsEmoji();
   
   // Si c'est Safari ancien ou Opera ancien, utiliser des alternatives
   if ((browser === 'safari' || browser === 'opera') && !emojiSupported) {
@@ -137,7 +137,7 @@ const MATERIAL_ICON_FALLBACKS = {
 // Composant pour remplacer wcs-mat-icon avec fallback Safari/Opera
 export function MaterialIconWithFallback({ icon, className = '', style = {}, title = '', size = 'm', color = '' }) {
   const browser = detectBrowser();
-  const emojiSupported = isEmojiSupported();
+  const emojiSupported = supportsEmoji();
   
   // Si c'est Safari/Opera et que les emojis ne sont pas bien supportés
   if ((browser === 'safari' || browser === 'opera') && !emojiSupported) {
