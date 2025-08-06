@@ -7,7 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Node modules (frontend)
+# Node modules
+node_modules/
 frontend/node_modules/
 
 # Build React
@@ -25,6 +26,9 @@ backend/vendor/
 *.njsproj
 *.sln
 *.sw?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Environment variables
 .env
@@ -32,6 +36,25 @@ backend/vendor/
 
 # Tests/coverage
 coverage/
+*.lcov
+test-results/
+junit.xml
+.phpunit.result.cache
 
 # Autres fichiers temporaires
 *.tsbuildinfo
+*.tmp
+*.temp
+nul
+*.phar
+
+# Production builds et tests
+dist/
+test-logs/
+*.zip
+*.tar.gz
+*.tgz
+
+# Scripts temporaires (garder seulement les .js dans scripts/)
+test-demo-logs.js
+test-runner-with-logs.js

@@ -22,7 +22,7 @@ Bienvenue dans la documentation complète du projet Journey !
 ## 🔧 Ressources Complémentaires
 
 ### Scripts Utilitaires
-- **[script/api-test.js](../script/api-test.js)** - Script de test de l'API
+- **[script/api-test.js](../scripts/api-test.js)** - Script de test de l'API
 
 ### Configuration
 - **[backend/.env.example](../backend/.env.example)** - Exemple de configuration backend

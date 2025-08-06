@@ -150,7 +150,7 @@ cd frontend && npm run build
 - **[ADMIN_GUIDE.md](Docs/ADMIN_GUIDE.md)** : Guide administrateur
 
 ### 🛠️ Scripts Utiles
-- **[api-test.js](script/api-test.js)** : Script de test de l'API
+- **[api-test.js](scripts/api-test.js)** : Script de test de l'API
 
 ### 📁 Organisation
 - **[Docs/](Docs/)** : Toute la documentation technique

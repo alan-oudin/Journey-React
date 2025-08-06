@@ -21,6 +21,7 @@ if (!window.AbortController) {
 
 // Polyfill pour String.prototype.at() (Safari < 15.4)
 if (!String.prototype.at) {
+  // eslint-disable-next-line no-extend-native
   String.prototype.at = function(index) {
     if (index < 0) {
       index = this.length + index;
@@ -31,6 +32,7 @@ if (!String.prototype.at) {
 
 // Polyfill pour Array.prototype.at() (Safari < 15.4)
 if (!Array.prototype.at) {
+  // eslint-disable-next-line no-extend-native
   Array.prototype.at = function(index) {
     if (index < 0) {
       index = this.length + index;
@@ -72,4 +74,9 @@ if (!window.console) {
   };
 }
 
-export default {};
+// Export des polyfills pour compatibilité
+const polyfills = {
+  initialized: true
+};
+
+export default polyfills;

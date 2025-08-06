@@ -14,7 +14,7 @@ export default function InscriptionPage() {
     restaurationSurPlace: false
   });
   const [loading, setLoading] = useState(false);
-  const [creneaux, setCreneaux] = useState({ matin: {}, 'apres-midi': {} });
+  const [creneauxData, setCreneauxData] = useState({});
   const [loadingCreneaux, setLoadingCreneaux] = useState(false);
   // const [isAuthenticated, setIsAuthenticated] = useState(false); // Non utilisé actuellement
   // const [showInfoAlert, setShowInfoAlert] = useState(true); // Non utilisé actuellement
@@ -31,8 +31,7 @@ export default function InscriptionPage() {
       // Si on change le nombre de proches, réinitialiser la sélection de créneau
       // si le créneau actuel devient insuffisant
       if (f.heureArrivee && value !== '') {
-        const periode = f.heureArrivee >= '13:00' ? 'apres-midi' : 'matin';
-        const info = creneaux[periode][f.heureArrivee];
+        const info = creneauxData[f.heureArrivee];
         if (info) {
           const personnesAInscrire = parseInt(value) + 1;
           if (info.places_restantes < personnesAInscrire) {
@@ -43,7 +42,7 @@ export default function InscriptionPage() {
       
       return newForm;
     });
-  }, [creneaux]);
+  }, [creneauxData]);
 
   const handleWcsCheckboxChange = useCallback((e) => {
     const checked = e.detail?.checked ?? e.target?.checked ?? false;
@@ -53,8 +52,18 @@ export default function InscriptionPage() {
   useEffect(() => {
     setLoadingCreneaux(true);
     apiGet('creneaux')
-      .then(data => setCreneaux(data))
-      .catch(() => setCreneaux({ matin: {}, 'apres-midi': {} }))
+      .then(data => {
+        // Convertir la structure matin/après-midi vers une structure plate
+        const flatData = {};
+        Object.keys(data.matin || {}).forEach(heure => {
+          flatData[heure] = data.matin[heure];
+        });
+        Object.keys(data['apres-midi'] || {}).forEach(heure => {
+          flatData[heure] = data['apres-midi'][heure];
+        });
+        setCreneauxData(flatData);
+      })
+      .catch(() => setCreneauxData({}))
       .finally(() => setLoadingCreneaux(false));
     
     // Code pour vérifier l'authentification supprimé car non utilisé
@@ -109,8 +118,7 @@ export default function InscriptionPage() {
       // Si on change le nombre de proches, réinitialiser la sélection de créneau
       // si le créneau actuel devient insuffisant
       if (name === 'nombreProches' && f.heureArrivee && value !== '') {
-        const periode = f.heureArrivee >= '13:00' ? 'apres-midi' : 'matin';
-        const info = creneaux[periode][f.heureArrivee];
+        const info = creneauxData[f.heureArrivee];
         if (info) {
           const personnesAInscrire = parseInt(value) + 1;
           if (info.places_restantes < personnesAInscrire) {
@@ -167,8 +175,7 @@ export default function InscriptionPage() {
       newErrors.heureArrivee = "Veuillez choisir un créneau d'arrivée.";
     } else if (form.nombreProches !== '') {
       // Vérifier si le créneau sélectionné a assez de places
-      const periode = form.heureArrivee >= '13:00' ? 'apres-midi' : 'matin';
-      const info = creneaux[periode][form.heureArrivee];
+      const info = creneauxData[form.heureArrivee];
       if (info) {
         const personnesAInscrire = parseInt(form.nombreProches) + 1;
         if (info.places_restantes < personnesAInscrire) {
@@ -223,8 +230,17 @@ export default function InscriptionPage() {
       
       // Recharger les créneaux pour mettre à jour les indicateurs de places
       apiGet('creneaux')
-        .then(data => setCreneaux(data))
-        .catch(() => setCreneaux({ matin: {}, 'apres-midi': {} }));
+        .then(data => {
+          const flatData = {};
+          Object.keys(data.matin || {}).forEach(heure => {
+            flatData[heure] = data.matin[heure];
+          });
+          Object.keys(data['apres-midi'] || {}).forEach(heure => {
+            flatData[heure] = data['apres-midi'][heure];
+          });
+          setCreneauxData(flatData);
+        })
+        .catch(() => setCreneauxData({}));
     } catch (e) {
       const msg = (e.message || '').toLowerCase();
       
@@ -269,12 +285,20 @@ export default function InscriptionPage() {
     }
   };
 
+  // Créneaux séparés par période
   const creneauxMatin = [
-    '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40'
+    '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', 
+    '11:00', '11:20', '11:40', '12:00', '12:20', '12:40'
   ];
+
   const creneauxApresMidi = [
-    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00', '15:20', '15:40'
+    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40'
   ];
+
+  // Debug: vérifier que tous les créneaux sont présents
+  console.log('Créneaux matin:', creneauxMatin);
+  console.log('Créneaux après-midi:', creneauxApresMidi);
+  console.log('Nombre total de créneaux:', creneauxMatin.length + creneauxApresMidi.length);
 
 
 
@@ -374,66 +398,85 @@ export default function InscriptionPage() {
               <wcs-label
                   style={{ marginBottom: 50 }}
                   required>Heure d'arrivée souhaitée</wcs-label>
+            </div>
               {loadingCreneaux ? (
-                <div>Chargement des créneaux...</div>
+                <div style={{textAlign: 'center'}}>Chargement des créneaux...</div>
               ) : (
-                <div>
-                  <div style={{marginBottom: 20}}><strong>🌅 Matin (9h00 - 11h40)</strong></div>
-                  <div className="creneaux-grid">
-                    {creneauxMatin.map(heure => {
-                      const info = creneaux.matin[heure] || { personnes_total: 0, places_restantes: 14, complet: false };
-                      const disabled = loading || info.complet || !peutInscrire(info);
-                      return (
-                        <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.5 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
-                          <div style={{ fontWeight: 'bold', fontSize: 18 }}>{heure}</div>
-                          <div style={{ margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <span>{info.places_restantes} places</span>
-                            {info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
-                            {!info.complet && !peutInscrire(info) && form.nombreProches !== '' && <wcs-badge color="danger">Insuffisant</wcs-badge>}
-                            {!info.complet && peutInscrire(info) && info.places_restantes <= 3 && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
-                          </div>
-                          <div style={{ marginTop: 8 }}>
-                            {form.heureArrivee === heure && (
-                              <MaterialIconWithFallback icon="check_circle" color="primary" size="m" />
-                            )}
-                            {form.heureArrivee !== heure && (
-                              <MaterialIconWithFallback icon="radio_button_unchecked" color="gray" size="m" />
-                            )}
-                          </div>
-                        </wcs-card>
-                      );
-                    })}
+                <div style={{ width: '100%' }}>
+                  {/* Section Matin */}
+                  <div style={{ marginBottom: 32 }}>
+                    <div style={{ marginBottom: 16, padding: '8px 16px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'center' }}>
+                      <strong>🌅 Créneaux du matin (9h00 - 12h40)</strong>
+                      <div style={{ fontSize: '0.9em', color: '#666', marginTop: '4px' }}>
+                        {creneauxMatin.length} créneaux disponibles
+                      </div>
+                    </div>
+                    <div className="creneaux-grid">
+                      {creneauxMatin.map(heure => {
+                        const info = creneauxData[heure] || { personnes_total: 0, places_restantes: 14, complet: false };
+                        const disabled = loading || info.complet || !peutInscrire(info);
+                        return (
+                          <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.5 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
+                            <div style={{ fontWeight: 'bold', fontSize: 18 }}>{heure}</div>
+                            <div style={{ margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span>{info.places_restantes} places</span>
+                              {info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
+                              {!info.complet && !peutInscrire(info) && form.nombreProches !== '' && <wcs-badge color="danger">Insuffisant</wcs-badge>}
+                              {!info.complet && peutInscrire(info) && info.places_restantes <= 3 && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
+                            </div>
+                            <div style={{ marginTop: 8 }}>
+                              {form.heureArrivee === heure && (
+                                <MaterialIconWithFallback icon="check_circle" color="primary" size="m" />
+                              )}
+                              {form.heureArrivee !== heure && (
+                                <MaterialIconWithFallback icon="radio_button_unchecked" color="gray" size="m" />
+                              )}
+                            </div>
+                          </wcs-card>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div style={{marginBottom: 20}}><strong>🌆 Après-midi (13h00 - 15h40)</strong></div>
-                  <div className="creneaux-grid">
-                    {creneauxApresMidi.map(heure => {
-                      const info = creneaux['apres-midi'][heure] || { personnes_total: 0, places_restantes: 14, complet: false };
-                      const disabled = loading || info.complet || !peutInscrire(info);
-                      return (
-                        <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.5 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
-                          <div style={{ fontWeight: 'bold', fontSize: 18 }}>{heure}</div>
-                          <div style={{ margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <span>{info.places_restantes} places</span>
-                            {info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
-                            {!info.complet && !peutInscrire(info) && form.nombreProches !== '' && <wcs-badge color="danger">Insuffisant</wcs-badge>}
-                            {!info.complet && peutInscrire(info) && info.places_restantes <= 3 && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
-                          </div>
-                          <div style={{ marginTop: 8 }}>
-                            {form.heureArrivee === heure && (
-                              <MaterialIconWithFallback icon="check_circle" color="primary" size="m" />
-                            )}
-                            {form.heureArrivee !== heure && (
-                              <MaterialIconWithFallback icon="radio_button_unchecked" color="gray" size="m" />
-                            )}
-                          </div>
-                        </wcs-card>
-                      );
-                    })}
+
+                  {/* Section Après-midi */}
+                  <div>
+                    <div style={{ marginBottom: 16, padding: '8px 16px', backgroundColor: '#fff3e0', borderRadius: '8px', textAlign: 'center' }}>
+                      <strong>🌅 Créneaux de l'après-midi (13h00 - 14h40)</strong>
+                      <div style={{ fontSize: '0.9em', color: '#666', marginTop: '4px' }}>
+                        {creneauxApresMidi.length} créneaux disponibles
+                      </div>
+                    </div>
+                    <div className="creneaux-grid">
+                      {creneauxApresMidi.map(heure => {
+                        const info = creneauxData[heure] || { personnes_total: 0, places_restantes: 14, complet: false };
+                        const disabled = loading || info.complet || !peutInscrire(info);
+                        return (
+                          <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.5 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
+                            <div style={{ fontWeight: 'bold', fontSize: 18 }}>{heure}</div>
+                            <div style={{ margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span>{info.places_restantes} places</span>
+                              {info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
+                              {!info.complet && !peutInscrire(info) && form.nombreProches !== '' && <wcs-badge color="danger">Insuffisant</wcs-badge>}
+                              {!info.complet && peutInscrire(info) && info.places_restantes <= 3 && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
+                            </div>
+                            <div style={{ marginTop: 8 }}>
+                              {form.heureArrivee === heure && (
+                                <MaterialIconWithFallback icon="check_circle" color="primary" size="m" />
+                              )}
+                              {form.heureArrivee !== heure && (
+                                <MaterialIconWithFallback icon="radio_button_unchecked" color="gray" size="m" />
+                              )}
+                            </div>
+                          </wcs-card>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
-              <wcs-hint>Choisissez un créneau disponible</wcs-hint>
-            </div>
+              <div style={{textAlign: 'center', marginTop: '16px'}}>
+                <wcs-hint>Choisissez un créneau disponible</wcs-hint>
+              </div>
           </div>
         </div>
         <wcs-button type="submit" color="primary" shape="block" disabled={loading} style={{marginTop: 15,width: '100%'}}>
