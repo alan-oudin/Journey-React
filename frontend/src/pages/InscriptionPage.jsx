@@ -292,7 +292,7 @@ export default function InscriptionPage() {
   ];
 
   const creneauxApresMidi = [
-    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40'
+    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
   ];
 
   // Debug: vérifier que tous les créneaux sont présents
@@ -307,6 +307,9 @@ export default function InscriptionPage() {
     <div className="gestion-container" style={{padding: '40px 20px', margin: '0 auto'}}>
       <h2>📝 Inscription d'un agent</h2>
       <p>Journée des Proches - Système d'inscription en amont</p>
+      <div style={{marginBottom: '20px', padding: '12px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'center'}}>
+        <strong>ℹ️ Durée de visite estimée à 2h</strong>
+      </div>
 
       {loading && (
         <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>
@@ -380,17 +383,6 @@ export default function InscriptionPage() {
               </wcs-select>
               <wcs-hint id="hint-nbproches">Nombre de proches maximum autorisé : 4</wcs-hint>
             </wcs-form-field>
-            <wcs-form-field>
-              <wcs-checkbox
-                ref={checkboxRef}
-                name="restaurationSurPlace"
-                checked={form.restaurationSurPlace}
-                disabled={loading}
-              >
-                🍽️ Je suis intéressé(e) par la restauration sur place
-              </wcs-checkbox>
-              <wcs-hint>Cochez cette case si vous souhaitez bénéficier de la restauration sur place lors de la journée</wcs-hint>
-            </wcs-form-field>
           </div>
           <div className="form-separator"></div>
           <div className="form-right">
@@ -441,7 +433,7 @@ export default function InscriptionPage() {
                   {/* Section Après-midi */}
                   <div>
                     <div style={{ marginBottom: 16, padding: '8px 16px', backgroundColor: '#fff3e0', borderRadius: '8px', textAlign: 'center' }}>
-                      <strong>🌅 Créneaux de l'après-midi (13h00 - 14h40)</strong>
+                      <strong>🌅 Créneaux de l'après-midi (13h00 - 15h00)</strong>
                       <div style={{ fontSize: '0.9em', color: '#666', marginTop: '4px' }}>
                         {creneauxApresMidi.length} créneaux disponibles
                       </div>

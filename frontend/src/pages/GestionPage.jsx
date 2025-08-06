@@ -15,7 +15,7 @@ const creneauxMatin = [
   '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40','12:00','12:20','12:40'
 ];
 const creneauxApresMidi = [
-  '13:00', '13:20', '13:40', '14:00', '14:20', '14:40'
+  '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
 ];
 
 // Composant Select avec gestion native des événements WCS
@@ -352,11 +352,6 @@ export default function GestionPage() {
             <StatCard number={stats ? stats.agents_inscrits : 0} label="Inscrits" />
             <StatCard number={stats ? stats.agents_absents : 0} label="Absents" />
             <StatCard number={stats ? stats.total_personnes : 0} label="Total personnes" />
-            <StatCard 
-              number={stats ? `${stats.taux_restauration || 0}%` : '0%'} 
-              label="Restauration sur place" 
-              subtitle={stats ? `${stats.agents_restauration || 0} personnes intéressées` : '0 personnes'}
-            />
           </div>
 
           <wcs-button color="primary" style={{marginTop: 16, marginBottom: 16,display:'flex'}} onClick={handleExportCSV} disabled={loading || agents.length === 0}>
@@ -408,7 +403,7 @@ export default function GestionPage() {
               <wcs-card mode="flat" style={{minWidth: 280, width: '100%', maxWidth: 400}}>
                 <wsc-card-body>
                   <wsc-card-header>
-                    <span style={{fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center', display: 'block',marginBlock:'15px'}}>🌆 Après-midi (13h00 - 15h40)</span>
+                    <span style={{fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center', display: 'block',marginBlock:'15px'}}>🌆 Après-midi (13h00 - 15h00)</span>
                   </wsc-card-header>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
@@ -661,25 +656,6 @@ export default function GestionPage() {
                 </div>
               </div>
 
-              {/* Section Restauration sur place */}
-              <div>
-                <strong>Restauration sur place :</strong>
-                <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {modalAgent.restauration_sur_place === 1 || modalAgent.restauration_sur_place === "1" || modalAgent.restauration_sur_place === true ? (
-                    <>
-                      <span style={{ color: '#28a745', fontSize: '1.2em' }}>✅</span>
-                      <span style={{ color: '#28a745', fontWeight: 500 }}>Oui</span>
-                      <span style={{ color: '#666', fontSize: '0.9em' }}>- Intéressé(e) par la restauration</span>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ color: '#6c757d', fontSize: '1.2em' }}>❌</span>
-                      <span style={{ color: '#6c757d' }}>Non</span>
-                      <span style={{ color: '#666', fontSize: '0.9em' }}>- Pas intéressé(e)</span>
-                    </>
-                  )}
-                </div>
-              </div>
 
               {/* Section Note */}
               <div>

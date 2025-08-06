@@ -239,32 +239,10 @@ export default function RecherchePage() {
                                             <span>{agentTrouve.heure_arrivee}</span>
                                         </div>
                                         <div style={{fontSize: '0.9em', color: '#666'}}>
-                                            {agentTrouve.heure_arrivee < '13:00' ? 'Matin (9h-12h40)' : 'Après-midi (13h-14h40)'}
+                                            {agentTrouve.heure_arrivee < '13:00' ? 'Matin (9h-12h40)' : 'Après-midi (13h-15h00)'}
                                         </div>
                                     </div>
 
-                                    <div style={{padding: '12px', border: '1px solid #e0e0e0', borderRadius: '6px'}}>
-                                        <div style={{fontWeight: 'bold', marginBottom: ' 4px'}}>🍽️ Restauration</div>
-                                        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                            {agentTrouve.restauration_sur_place === 1 || agentTrouve.restauration_sur_place === "1" || agentTrouve.restauration_sur_place === true ? (
-                                                <>
-                                                    <span style={{color: '#28a745', fontSize: '1.2em'}}>✅</span>
-                                                    <span style={{color: '#28a745', fontWeight: 'bold'}}>Oui</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span style={{color: '#6c757d', fontSize: '1.2em'}}>❌</span>
-                                                    <span style={{color: '#6c757d'}}>Non</span>
-                                                </>
-                                            )}
-                                        </div>
-                                        <div style={{fontSize: '0.9em', color: '#666'}}>
-                                            {agentTrouve.restauration_sur_place === 1 || agentTrouve.restauration_sur_place === "1" || agentTrouve.restauration_sur_place === true ? 
-                                                'Intéressé(e) par la restauration sur place' : 
-                                                'Pas intéressé(e) par la restauration'
-                                            }
-                                        </div>
-                                    </div>
 
                                     <div style={{padding: '12px', border: '1px solid #e0e0e0', borderRadius: '6px'}}>
                                         <div style={{fontWeight: 'bold', marginBottom: '4px'}}>📋 Statut</div>

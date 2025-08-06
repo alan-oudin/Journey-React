@@ -12,7 +12,7 @@ const creneauxMatin = [
   '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40', '12:00', '12:20', '12:40'
 ];
 const creneauxApresMidi = [
-  '13:00', '13:20', '13:40', '14:00', '14:20', '14:40'
+  '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
 ];
 
 // const allCreneaux = [...creneauxMatin, ...creneauxApresMidi]; // Non utilisé actuellement
@@ -29,7 +29,6 @@ export default function UserEditor() {
     nombre_proches: 0,
     heure_arrivee: '',
     statut: 'inscrit',
-    restauration_sur_place: false,
     note: ''
   });
   const [alerts, setAlerts] = useState([]);
@@ -40,7 +39,6 @@ export default function UserEditor() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const statutSelectRef = useRef(null);
-  const checkboxRestaurationRef = useRef(null);
 
   const showAlert = useCallback((message, type = 'info') => {
     const id = Date.now();
@@ -101,7 +99,6 @@ export default function UserEditor() {
       'nombre_proches': 'Nombre de proches',
       'heure_arrivee': 'Heure d\'arrivée',
       'statut': 'Statut',
-      'restauration_sur_place': 'Restauration sur place',
       'note': 'Note'
     };
     return fieldNames[fieldName] || fieldName;
@@ -113,8 +110,6 @@ export default function UserEditor() {
     switch (fieldName) {
       case 'statut':
         return STATUTS.find(s => s.value === value)?.label || value;
-      case 'restauration_sur_place':
-        return value === '1' || value === 1 || value === true ? 'Oui' : 'Non';
       default:
         return value;
     }
@@ -162,8 +157,7 @@ export default function UserEditor() {
           nombre_proches: data.nombre_proches || 0,
           heure_arrivee: data.heure_arrivee || '',
           statut: data.statut || 'inscrit',
-          restauration_sur_place: data.restauration_sur_place === 1 || data.restauration_sur_place === '1' || data.restauration_sur_place === true,
-          note: data.note || ''
+            note: data.note || ''
         });
         setEditMode(false);
       } catch (apiError) {
@@ -190,7 +184,6 @@ export default function UserEditor() {
       // Utiliser apiPut pour mettre à jour l'agent avec la méthode PUT
       const data = await apiPut('agents', {
         ...editForm,
-        restauration_sur_place: editForm.restauration_sur_place ? 1 : 0,
         nombre_proches: parseInt(editForm.nombre_proches)
       }, { code: selectedAgent.code_personnel });
       
@@ -267,29 +260,6 @@ export default function UserEditor() {
     }
   }, [editMode, selectedAgent]);
 
-  // Gérer les événements de la checkbox de restauration
-  useEffect(() => {
-    const checkboxElement = checkboxRestaurationRef.current;
-    if (checkboxElement && editMode) {
-      const handleWcsChangeEvent = (event) => {
-        setEditForm(prev => ({ ...prev, restauration_sur_place: event.detail.checked }));
-      };
-      
-      checkboxElement.addEventListener('wcsChange', handleWcsChangeEvent);
-      
-      return () => {
-        checkboxElement.removeEventListener('wcsChange', handleWcsChangeEvent);
-      };
-    }
-  }, [editMode, selectedAgent]);
-
-  // Synchroniser la checkbox WCS avec l'état React
-  useEffect(() => {
-    const checkboxElement = checkboxRestaurationRef.current;
-    if (checkboxElement) {
-      checkboxElement.checked = editMode ? editForm.restauration_sur_place : (selectedAgent?.restauration_sur_place === 1 || selectedAgent?.restauration_sur_place === '1' || selectedAgent?.restauration_sur_place === true);
-    }
-  }, [editMode, editForm.restauration_sur_place, selectedAgent]);
 
   return (
     <div style={{ padding: '20px' }}>
@@ -478,18 +448,6 @@ export default function UserEditor() {
             </wcs-form-field>
           </div>
 
-          {/* Restauration sur place */}
-          <div style={{ marginTop: '16px' }}>
-            <wcs-form-field>
-              <wcs-checkbox
-                ref={checkboxRestaurationRef}
-                checked={editMode ? editForm.restauration_sur_place : (selectedAgent.restauration_sur_place === 1 || selectedAgent.restauration_sur_place === '1' || selectedAgent.restauration_sur_place === true)}
-                disabled={!editMode}
-              >
-                Intéressé(e) par la restauration sur place
-              </wcs-checkbox>
-            </wcs-form-field>
-          </div>
 
           {/* Note */}
           <div style={{ marginTop: '16px' }}>
@@ -512,7 +470,6 @@ export default function UserEditor() {
               <div><strong>Date d'inscription:</strong> {selectedAgent.date_inscription ? new Date(selectedAgent.date_inscription).toLocaleString('fr-FR') : 'Non renseignée'}</div>
               <div><strong>Dernière modification:</strong> {selectedAgent.updated_at ? new Date(selectedAgent.updated_at).toLocaleString('fr-FR') : 'Jamais modifié'}</div>
               <div><strong>Total de personnes:</strong> {parseInt(selectedAgent.nombre_proches || 0) + 1} personne{parseInt(selectedAgent.nombre_proches || 0) + 1 > 1 ? 's' : ''}</div>
-              <div><strong>Restauration sur place:</strong> {(selectedAgent.restauration_sur_place === 1 || selectedAgent.restauration_sur_place === '1' || selectedAgent.restauration_sur_place === true) ? 'Oui' : 'Non'}</div>
               {selectedAgent.heure_validation && (
                 <div><strong>Heure de pointage:</strong> {new Date(selectedAgent.heure_validation).toLocaleString('fr-FR')}</div>
               )}
@@ -544,7 +501,6 @@ export default function UserEditor() {
                     <th style={{ padding: '8px 12px', textAlign: 'center' }}>Proches</th>
                     <th style={{ padding: '8px 12px', textAlign: 'center' }}>Heure</th>
                     <th style={{ padding: '8px 12px', textAlign: 'center' }}>Statut</th>
-                    <th style={{ padding: '8px 12px', textAlign: 'center' }}>Restauration</th>
                     <th style={{ padding: '8px 12px', textAlign: 'center' }}>Action</th>
                   </tr>
                 </thead>
@@ -578,19 +534,6 @@ export default function UserEditor() {
                         </span>
                       </td>
                       <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                        <span style={{
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          fontSize: '0.8em',
-                          backgroundColor: 
-                            (agent.restauration_sur_place === 1 || agent.restauration_sur_place === '1' || agent.restauration_sur_place === true) ? '#d4edda' : '#f8d7da',
-                          color:
-                            (agent.restauration_sur_place === 1 || agent.restauration_sur_place === '1' || agent.restauration_sur_place === true) ? '#155724' : '#721c24'
-                        }}>
-                          {(agent.restauration_sur_place === 1 || agent.restauration_sur_place === '1' || agent.restauration_sur_place === true) ? 'Oui' : 'Non'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                           <wcs-button
                             size="s"
@@ -604,8 +547,7 @@ export default function UserEditor() {
                                 nombre_proches: agent.nombre_proches || 0,
                                 heure_arrivee: agent.heure_arrivee || '',
                                 statut: agent.statut || 'inscrit',
-                                restauration_sur_place: agent.restauration_sur_place === 1 || agent.restauration_sur_place === '1' || agent.restauration_sur_place === true,
-                                note: agent.note || ''
+                                                note: agent.note || ''
                               });
                               setEditMode(false);
                             }}
@@ -759,7 +701,7 @@ export default function UserEditor() {
                 {/* Créneaux Après-midi */}
                 <div style={{ flex: 1, minWidth: 300 }}>
                   <h4 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    🌆 Créneaux Après-midi (13h00 - 14h40)
+                    🌆 Créneaux Après-midi (13h00 - 15h00)
                   </h4>
                   <div style={{ display: 'grid', gap: 8 }}>
                     {creneauxApresMidi.map(heure => {
