@@ -16,12 +16,12 @@ defineCustomElements();
 
 // Détecter l'environnement et définir le basename approprié
 const getBasename = () => {
-  // En développement (localhost:3000), pas de basename
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return '';
+  // Vérifier si on est sur un sous-répertoire /journey
+  if (window.location.pathname.startsWith('/journey')) {
+    return '/journey';
   }
-  // En production, utiliser /journey
-  return '/journey';
+  // Sinon, pas de basename (pour localhost:3000 par exemple)
+  return '';
 };
 
 export default function App() {
@@ -52,6 +52,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
           <div className="footer-area"><Footer /></div>
