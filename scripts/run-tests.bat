@@ -11,7 +11,7 @@ echo 🔧 Vérification des prérequis...
 echo.
 
 :: Vérifier Node.js
-where node >nul 2>nul
+where node >NUL 2>NUL
 if %ERRORLEVEL% neq 0 (
     echo ❌ Node.js n'est pas installé ou pas dans le PATH
     pause
@@ -19,7 +19,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Vérifier PHP
-where php >nul 2>nul
+where php >NUL 2>NUL
 if %ERRORLEVEL% neq 0 (
     echo ❌ PHP n'est pas installé ou pas dans le PATH
     pause
@@ -27,7 +27,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Vérifier Composer
-where composer >nul 2>nul
+where composer >NUL 2>NUL
 if %ERRORLEVEL% neq 0 (
     echo ❌ Composer n'est pas installé ou pas dans le PATH
     pause

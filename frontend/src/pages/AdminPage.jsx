@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import GestionPage from './GestionPage';
 import AdminManagement from '../components/AdminManagement';
 import UserEditor from '../components/UserEditor';
+import WhitelistManagement from '../components/WhitelistManagement';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('gestion');
@@ -9,7 +10,8 @@ export default function AdminPage() {
 
   return (
     <div>
-      {/* Navigation avec boutons WCS */}
+      {/* N
+      avigation avec boutons WCS */}
       <div className="admin-nav-secondary">
         <wcs-button
           shape={activeTab === 'gestion' ? 'solid' : 'outline'}
@@ -36,12 +38,21 @@ export default function AdminPage() {
           <wcs-mat-icon icon="group"></wcs-mat-icon>
           Gestion des administrateurs
         </wcs-button>
+        <wcs-button
+            shape={activeTab === 'whitelist' ? 'solid' : 'outline'}
+            color="primary"
+            onClick={() => setActiveTab('whitelist')}
+        >
+          <wcs-mat-icon icon="security"></wcs-mat-icon>
+          Whitelist
+        </wcs-button>
       </div>
 
       {/* Contenu principal */}
       {activeTab === 'gestion' && <GestionPage />}
       {activeTab === 'admins' && <AdminManagement />}
       {activeTab === 'users' && <UserEditor />}
+      {activeTab === 'whitelist' && <WhitelistManagement />}
     </div>
   );
 }

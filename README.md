@@ -120,6 +120,7 @@ cd frontend && npm run build
 - **Statistiques temps réel** : Inscrits, présents, absents, annulés
 - **Export CSV** : Données complètes pour traitement
 - **Gestion créneaux** : Vue globale matin/après-midi (14 places max)
+- **🔐 Whitelist** : Contrôle des agents autorisés à s'inscrire
 
 ### 🔧 Fonctionnalités Techniques
 - **Multi-environnements** : Configuration automatique dev/prod
@@ -143,18 +144,77 @@ cd frontend && npm run build
 - ✅ Logs et monitoring selon environnement
 - ✅ Fichiers sensibles protégés (.env exclus du versioning)
 
-## 📚 Documentation
+## 🔐 Système Whitelist
 
-- **[ENVIRONMENTS.md](Docs/ENVIRONMENTS.md)** : Configuration des environnements
-- **[DEPLOIEMENT_PRODUCTION.md](Docs/DEPLOIEMENT_PRODUCTION.md)** : Guide de déploiement  
-- **[ADMIN_GUIDE.md](Docs/ADMIN_GUIDE.md)** : Guide administrateur
+### Vue d'ensemble
+Le système de whitelist sécurise l'inscription en n'autorisant que les agents préalablement enregistrés. Il protège les données personnelles avec un hachage SHA-256 conforme RGPD.
 
-### 🛠️ Scripts Utiles
+### 📋 Structure des données
+```sql
+-- Table agents_whitelist
+code_personnel VARCHAR(8)  -- Ex: 1234567A (7 chiffres + 1 lettre)
+nom_hash VARCHAR(64)       -- Hash SHA-256 du nom
+prenom_hash VARCHAR(64)    -- Hash SHA-256 du prénom  
+actif TINYINT(1)          -- 1=autorisé, 0=bloqué
+```
+
+### 🔧 Fonctionnalités administrateur
+- **Ajout manuel** : Interface web pour ajouter un agent
+- **Import CSV/Excel** : Import en lot depuis fichier structuré
+- **Activation/Désactivation** : Contrôle des autorisations sans suppression
+- **Statistiques** : Nombre d'agents total/actifs/inactifs
+- **Recherche** : Par code personnel, nom ou prénom
+- **Export** : Téléchargement du modèle CSV
+
+### 📁 Scripts de gestion
+- **[backend/scripts/import_whitelist_csv.php](backend/scripts/import_whitelist_csv.php)** : Import depuis CSV
+- **[backend/scripts/import_whitelist_excel.php](backend/scripts/import_whitelist_excel.php)** : Import depuis Excel
+- **[backend/scripts/README_IMPORT.md](backend/scripts/README_IMPORT.md)** : Guide complet d'import
+- **[backend/scripts/exemple_whitelist.csv](backend/scripts/exemple_whitelist.csv)** : Modèle de fichier
+
+### 🛡️ Validation côté inscription
+Lors de l'inscription, le système :
+1. Vérifie le format du code personnel (7 chiffres + 1 lettre)
+2. Hache les nom/prénom fournis avec la même méthode
+3. Compare les hash avec ceux de la whitelist
+4. Autorise ou refuse l'inscription selon le résultat
+
+### 🔒 Sécurité RGPD
+- **Hachage SHA-256** : Noms et prénoms jamais stockés en clair
+- **Sel configurable** : Variable `WHITELIST_SALT` dans `.env`
+- **Codes en clair** : Seuls les codes personnels restent lisibles (nécessaires)
+- **Logs sécurisés** : Aucune donnée personnelle dans les logs
+
+## 📚 Documentation Complète
+
+### 🏠 Navigation Rapide
+- **[📚 Index Documentation](Docs/README.md)** : Vue d'ensemble de toute la documentation
+
+### 🚀 Installation & Configuration
+- **[ENVIRONMENTS.md](Docs/ENVIRONMENTS.md)** : Configuration des environnements (dev/prod)
+
+### 🛠️ Déploiement & Administration
+- **[DEPLOIEMENT_PRODUCTION.md](Docs/DEPLOIEMENT_PRODUCTION.md)** : Guide de déploiement XAMPP
+- **[ADMIN_GUIDE.md](Docs/ADMIN_GUIDE.md)** : Guide d'administration complet
+- **[BROWSER_COMPATIBILITY.md](frontend/BROWSER_COMPATIBILITY.md)** : Compatibilité navigateurs
+
+### 🔐 Scripts Whitelist
+- **[README_IMPORT.md](backend/scripts/README_IMPORT.md)** : Guide d'import whitelist
+- **[import_whitelist_csv.php](backend/scripts/import_whitelist_csv.php)** : Script d'import CSV
+- **[import_whitelist_excel.php](backend/scripts/import_whitelist_excel.php)** : Script d'import Excel
+
+### 📝 Historique & Tests
+- **[CHANGELOG.md](Docs/CHANGELOG.md)** : Versions et modifications
+- **[DOCUMENTATION_TESTS_COMPLETE.md](Docs/DOCUMENTATION_TESTS_COMPLETE.md)** : Tests automatisés
+
+### 🛠️ Scripts Utilitaires
 - **[api-test.js](scripts/api-test.js)** : Script de test de l'API
+- **[add_admin.php](backend/add_admin.php)** : Ajout d'administrateurs CLI
 
 ### 📁 Organisation
-- **[Docs/](Docs/)** : Toute la documentation technique
-- **[script/](script/)** : Scripts utilitaires
+- **[Docs/](Docs/)** : Documentation technique complète
+- **[script/](script/)** : Scripts utilitaires généraux
+- **[backend/scripts/](backend/scripts/)** : Scripts spécifiques backend
 
 ## Contribution
 

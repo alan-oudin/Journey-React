@@ -88,6 +88,15 @@ VALUES (
 - Suppression d'administrateurs
 - Protection contre l'auto-suppression
 
+### 🔐 Gestion de la Whitelist (Page admin)
+- **Contrôle des agents autorisés** : Seuls les agents de la whitelist peuvent s'inscrire
+- **Ajout manuel** : Interface pour ajouter un agent individuellement
+- **Import CSV/Excel** : Import en lot avec scripts automatisés
+- **Recherche et filtres** : Par code personnel, nom, prénom et statut
+- **Activation/Désactivation** : Contrôle des autorisations sans suppression
+- **Statistiques** : Nombre d'agents total/actifs/inactifs en temps réel
+- **Sécurité RGPD** : Données personnelles hachées SHA-256
+
 ## Sécurité
 
 ### Protection automatique
@@ -116,6 +125,17 @@ GET /api.php?path=verify-token
 GET /api.php?path=admins          # Lister
 POST /api.php?path=admins         # Ajouter
 DELETE /api.php?path=admins&id=X  # Supprimer
+```
+
+### 🔐 Gestion de la Whitelist
+```
+GET /api.php?path=whitelist           # Statistiques whitelist
+GET /api.php?path=whitelist/list      # Lister agents
+POST /api.php?path=whitelist          # Ajouter agent
+DELETE /api.php?path=whitelist        # Désactiver agent
+PUT /api.php?path=whitelist           # Réactiver agent
+GET /api.php?path=whitelist/download-example  # Télécharger modèle CSV
+POST /api.php?path=whitelist/upload   # Import CSV/Excel
 ```
 
 ## Dépannage

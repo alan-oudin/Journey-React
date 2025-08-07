@@ -1,5 +1,43 @@
 # Changelog - Journey App
 
+## [2.5.0] - 2025-08-07
+
+### 🔐 SYSTÈME WHITELIST - NOUVEAUTÉ MAJEURE
+- **Sécurité renforcée** : Seuls les agents préalablement autorisés peuvent s'inscrire
+- **Protection RGPD** : Données personnelles hachées SHA-256 avec sel configurable
+- **Interface admin complète** : Gestion whitelist intégrée à l'espace administration
+- **Import automatisé** : Scripts PHP pour import CSV et Excel en lot
+- **Validation renforcée** : Vérification code personnel + nom/prénom lors de l'inscription
+
+### 📊 Fonctionnalités Whitelist
+- **Ajout manuel** : Interface web pour ajouter des agents individuellement
+- **Import CSV/Excel** : Scripts `import_whitelist_csv.php` et `import_whitelist_excel.php`
+- **Recherche avancée** : Filtrage par code personnel, nom, prénom et statut
+- **Activation/Désactivation** : Contrôle des autorisations sans suppression de données
+- **Statistiques temps réel** : Nombre d'agents total/actifs/inactifs
+- **Export modèle** : Téléchargement automatique du fichier exemple CSV
+
+### 🛡️ Sécurité et Conformité
+- **Hachage SHA-256** : Noms et prénoms jamais stockés en clair
+- **Sel configurable** : Variable `WHITELIST_SALT` dans `.env`
+- **Validation stricte** : Format codes personnels SNCF (7 chiffres + 1 lettre)
+- **Logs sécurisés** : Aucune donnée personnelle dans les fichiers de log
+- **API sécurisées** : Endpoints whitelist protégés par authentification JWT
+
+### 🔧 Architecture Technique
+- **Classe PHP dédiée** : `WhitelistValidator` avec méthodes complètes
+- **Composant React** : `WhitelistManagement` avec interface moderne WCS
+- **Base de données** : Table `agents_whitelist` avec indexation optimisée
+- **Scripts utilitaires** : Outils CLI pour administration et import de données
+
+### 📚 Documentation Complète
+- **README mis à jour** : Section whitelist avec guide complet
+- **Guide d'import** : `README_IMPORT.md` avec instructions détaillées
+- **Admin guide** : Fonctionnalités whitelist ajoutées au guide administrateur
+- **API documentation** : Endpoints whitelist documentés
+
+---
+
 ## [2.4.2] - 2025-08-01
 
 ### 📁 Organisation du Projet

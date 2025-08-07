@@ -12,7 +12,7 @@ Bienvenue dans la documentation complète du projet Journey !
 - **[DEPLOIEMENT_PRODUCTION.md](DEPLOIEMENT_PRODUCTION.md)** - Guide complet de déploiement XAMPP
 
 ### 👤 Administration  
-- **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** - Guide d'utilisation administrateur
+- **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** - Guide d'utilisation administrateur (avec whitelist)
 
 ### 📝 Historique
 - **[CHANGELOG.md](CHANGELOG.md)** - Historique des modifications et versions

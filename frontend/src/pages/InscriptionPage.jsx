@@ -295,10 +295,6 @@ export default function InscriptionPage() {
     '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
   ];
 
-  // Debug: vérifier que tous les créneaux sont présents
-  console.log('Créneaux matin:', creneauxMatin);
-  console.log('Créneaux après-midi:', creneauxApresMidi);
-  console.log('Nombre total de créneaux:', creneauxMatin.length + creneauxApresMidi.length);
 
 
 

@@ -107,6 +107,9 @@ if ($appDebug) {
 }
 
 
+// Charger la classe WhitelistValidator
+require_once __DIR__ . '/../src/WhitelistValidator.php';
+
 // Configuration base de données
 $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? 'localhost';
 $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?? '3306';
@@ -157,6 +160,52 @@ try {
         )
     ");
 
+    // Créer la table whitelist pour les agents autorisés
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS agents_whitelist (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            code_personnel VARCHAR(8) NOT NULL UNIQUE COMMENT 'Code personnel SNCF (7 chiffres + 1 lettre)',
+            nom VARCHAR(100) NULL COMMENT 'Nom en clair pour affichage',
+            prenom VARCHAR(100) NULL COMMENT 'Prénom en clair pour affichage',
+            nom_hash VARCHAR(64) NOT NULL COMMENT 'Hash SHA-256 du nom (sécurisé)',
+            prenom_hash VARCHAR(64) NOT NULL COMMENT 'Hash SHA-256 du prénom (sécurisé)',
+            actif TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Agent autorisé à s\'inscrire (1=oui, 0=non)',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_actif (actif),
+            INDEX idx_created (created_at),
+            INDEX idx_nom (nom),
+            INDEX idx_prenom (prenom)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
+        COMMENT='Whitelist sécurisée des agents autorisés - données hachées pour protection RGPD'
+    ");
+    
+    // Ajouter les colonnes nom et prenom si elles n'existent pas déjà
+    try {
+        // Vérifier si les colonnes existent
+        $stmt = $pdo->query("SHOW COLUMNS FROM agents_whitelist LIKE 'nom'");
+        if ($stmt->rowCount() == 0) {
+            // Ajouter la colonne nom
+            $pdo->exec("ALTER TABLE agents_whitelist ADD COLUMN nom VARCHAR(100) NULL AFTER code_personnel");
+            error_log("Colonne 'nom' ajoutée à agents_whitelist");
+        }
+        
+        $stmt = $pdo->query("SHOW COLUMNS FROM agents_whitelist LIKE 'prenom'");
+        if ($stmt->rowCount() == 0) {
+            // Ajouter la colonne prenom
+            $pdo->exec("ALTER TABLE agents_whitelist ADD COLUMN prenom VARCHAR(100) NULL AFTER nom");
+            error_log("Colonne 'prenom' ajoutée à agents_whitelist");
+        }
+        
+        // Créer les index si ils n'existent pas
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_agents_whitelist_nom ON agents_whitelist(nom)");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_agents_whitelist_prenom ON agents_whitelist(prenom)");
+        
+    } catch (PDOException $e) {
+        // Les colonnes existent peut-être déjà ou erreur, continuer
+        error_log("Erreur lors de l'ajout des colonnes nom/prenom: " . $e->getMessage());
+    }
+
     // Vérifier si un admin par défaut existe déjà
     $stmt = $pdo->query("SELECT COUNT(*) as count FROM admins");
     $result = $stmt->fetch();
@@ -203,7 +252,8 @@ try {
                         'Statistiques avancées par statut',
                         'Export CSV et sauvegarde JSON',
                         'Pointage en masse',
-                        'Structure simplifiée sans champ service'
+                        'Structure simplifiée sans champ service',
+                        'Whitelist sécurisée pour l\'autorisation d\'inscription'
                     ]
                 ]);
             } else {
@@ -243,6 +293,30 @@ try {
                 // Validation des données
                 if (!preg_match('/^[0-9]{7}[A-Za-z]{1}$/', $input['code_personnel'])) {
                     throw new Exception('Le code personnel doit contenir exactement 7 chiffres suivis d\'une lettre (ex: 1234567A)');
+                }
+
+                // VALIDATION WHITELIST - Vérifier si l'agent est autorisé à s'inscrire
+                try {
+                    $whitelistValidator = new WhitelistValidator($pdo);
+                    $validationResult = $whitelistValidator->validateAgent(
+                        $input['code_personnel'],
+                        $input['nom'],
+                        $input['prenom']
+                    );
+
+                    if (!$validationResult['success'] || !$validationResult['authorized']) {
+                        http_response_code(403);
+                        echo json_encode([
+                            'error' => 'Agent non autorisé',
+                            'message' => $validationResult['message'],
+                            'error_type' => $validationResult['error_type'] ?? 'VALIDATION_ERROR',
+                            'code_personnel' => $input['code_personnel']
+                        ]);
+                        return;
+                    }
+                } catch (Exception $e) {
+                    error_log('Erreur whitelist validation: ' . $e->getMessage());
+                    throw new Exception('Erreur lors de la validation de l\'autorisation d\'inscription');
                 }
 
                 if ($input['nombre_proches'] < 0 || $input['nombre_proches'] > 4) {
@@ -1158,6 +1232,282 @@ try {
             }
             break;
 
+        case 'whitelist':
+            $whitelistValidator = new WhitelistValidator($pdo);
+            
+            if ($method === 'GET') {
+                // Récupérer les statistiques de la whitelist
+                $statsResult = $whitelistValidator->getStats();
+                if ($statsResult['success']) {
+                    echo json_encode([
+                        'success' => true,
+                        'stats' => $statsResult['stats'],
+                        'message' => 'Statistiques whitelist récupérées'
+                    ]);
+                } else {
+                    throw new Exception($statsResult['message']);
+                }
+                
+            } elseif ($method === 'POST') {
+                // Ajouter un agent à la whitelist
+                $input = json_decode(file_get_contents('php://input'), true);
+                
+                if (!$input || !isset($input['code_personnel']) || !isset($input['nom']) || !isset($input['prenom'])) {
+                    throw new Exception('Code personnel, nom et prénom requis');
+                }
+                
+                // Validation du format du code personnel
+                if (!preg_match('/^[0-9]{7}[A-Za-z]{1}$/', $input['code_personnel'])) {
+                    throw new Exception('Le code personnel doit contenir exactement 7 chiffres suivis d\'une lettre');
+                }
+                
+                $result = $whitelistValidator->addAgent(
+                    $input['code_personnel'],
+                    $input['nom'],
+                    $input['prenom']
+                );
+                
+                if ($result['success']) {
+                    echo json_encode($result);
+                } else {
+                    throw new Exception($result['message']);
+                }
+                
+            } elseif ($method === 'DELETE') {
+                // Désactiver un agent de la whitelist
+                $code = $_GET['code'] ?? '';
+                if (empty($code)) {
+                    throw new Exception('Code personnel manquant pour la désactivation');
+                }
+                
+                $result = $whitelistValidator->deactivateAgent($code);
+                
+                if ($result['success']) {
+                    echo json_encode($result);
+                } else {
+                    throw new Exception($result['message']);
+                }
+                
+            } elseif ($method === 'PUT') {
+                // Réactiver un agent de la whitelist
+                $input = json_decode(file_get_contents('php://input'), true);
+                $code = $input['code'] ?? '';
+                
+                if (empty($code)) {
+                    throw new Exception('Code personnel manquant pour la réactivation');
+                }
+                
+                $result = $whitelistValidator->reactivateAgent($code);
+                
+                if ($result['success']) {
+                    echo json_encode($result);
+                } else {
+                    throw new Exception($result['message']);
+                }
+                
+            } else {
+                throw new Exception('Méthode non autorisée pour /whitelist');
+            }
+            break;
+
+        case 'whitelist/download-example':
+            if ($method === 'GET') {
+                // Télécharger le fichier exemple CSV
+                $csvExamplePath = __DIR__ . '/../scripts/exemple_whitelist.csv';
+                
+                if (!file_exists($csvExamplePath)) {
+                    throw new Exception('Fichier d\'exemple CSV non trouvé');
+                }
+                
+                // Headers CSV
+                header('Content-Type: text/csv; charset=utf-8');
+                header('Content-Disposition: attachment; filename="exemple_whitelist.csv"');
+                header('Cache-Control: max-age=0');
+                
+                // Lire et envoyer le fichier
+                readfile($csvExamplePath);
+                exit();
+            } else {
+                throw new Exception('Méthode non autorisée pour /whitelist/download-example');
+            }
+            break;
+
+        case 'whitelist/upload':
+            if ($method === 'POST') {
+                // Upload et traitement du fichier CSV
+                if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
+                    throw new Exception('Fichier CSV requis');
+                }
+                
+                $uploadedFile = $_FILES['csv_file'];
+                $tmpPath = $uploadedFile['tmp_name'];
+                
+                // Vérifier l'extension
+                $fileInfo = pathinfo($uploadedFile['name']);
+                $allowedExtensions = ['csv', 'txt'];
+                if (!isset($fileInfo['extension']) || !in_array(strtolower($fileInfo['extension']), $allowedExtensions)) {
+                    throw new Exception('Seuls les fichiers CSV sont autorisés');
+                }
+                
+                // Vérifier la taille (max 2MB)
+                if ($uploadedFile['size'] > 2 * 1024 * 1024) {
+                    throw new Exception('Fichier trop volumineux (max 2MB)');
+                }
+                
+                // Traiter le fichier CSV
+                $whitelistValidator = new WhitelistValidator($pdo);
+                
+                // VIDER LA TABLE WHITELIST AVANT L'IMPORT
+                $pdo->exec("DELETE FROM agents_whitelist");
+                
+                $results = [
+                    'total' => 0,
+                    'success' => 0,
+                    'errors' => 0,
+                    'ignored' => 0,
+                    'details' => []
+                ];
+                
+                // Détecter le délimiteur
+                $delimiter = ',';
+                $handle = fopen($tmpPath, 'r');
+                if ($handle) {
+                    $firstLine = fgets($handle);
+                    if ($firstLine) {
+                        if (substr_count($firstLine, ';') > substr_count($firstLine, ',')) {
+                            $delimiter = ';';
+                        }
+                    }
+                    fclose($handle);
+                }
+                
+                // Lire et traiter le CSV
+                $handle = fopen($tmpPath, 'r');
+                if (!$handle) {
+                    throw new Exception('Impossible de lire le fichier CSV');
+                }
+                
+                $lineNumber = 0;
+                $isFirstLine = true;
+                
+                while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                    $lineNumber++;
+                    
+                    // Ignorer les en-têtes si détectés
+                    if ($isFirstLine) {
+                        $isFirstLine = false;
+                        $firstCell = isset($data[0]) ? trim($data[0]) : '';
+                        if (stripos($firstCell, 'code') !== false || stripos($firstCell, 'personnel') !== false) {
+                            continue;
+                        }
+                    }
+                    
+                    $codePersonnel = isset($data[0]) ? trim($data[0]) : '';
+                    $nom = isset($data[1]) ? trim($data[1]) : '';
+                    $prenom = isset($data[2]) ? trim($data[2]) : '';
+                    
+                    // Ignorer lignes vides
+                    if (empty($codePersonnel) && empty($nom) && empty($prenom)) {
+                        $results['ignored']++;
+                        continue;
+                    }
+                    
+                    $results['total']++;
+                    
+                    // Validation
+                    $errors = [];
+                    if (empty($codePersonnel)) {
+                        $errors[] = 'Code personnel manquant';
+                    } elseif (!preg_match('/^[0-9]{7}[A-Za-z]{1}$/', $codePersonnel)) {
+                        $errors[] = 'Format code personnel invalide';
+                    }
+                    
+                    if (empty($nom)) $errors[] = 'Nom manquant';
+                    if (empty($prenom)) $errors[] = 'Prénom manquant';
+                    
+                    if (!empty($errors)) {
+                        $results['errors']++;
+                        $results['details'][] = [
+                            'line' => $lineNumber,
+                            'code' => $codePersonnel,
+                            'nom' => $nom,
+                            'prenom' => $prenom,
+                            'status' => 'error',
+                            'message' => implode(', ', $errors)
+                        ];
+                        continue;
+                    }
+                    
+                    // Ajouter à la whitelist
+                    $result = $whitelistValidator->addAgent(
+                        strtoupper($codePersonnel),
+                        strtoupper(trim($nom)),
+                        ucfirst(strtolower(trim($prenom)))
+                    );
+                    
+                    if ($result['success']) {
+                        $results['success']++;
+                        $results['details'][] = [
+                            'line' => $lineNumber,
+                            'code' => $codePersonnel,
+                            'nom' => $nom,
+                            'prenom' => $prenom,
+                            'status' => 'success',
+                            'message' => 'Ajouté avec succès'
+                        ];
+                    } else {
+                        $results['errors']++;
+                        $results['details'][] = [
+                            'line' => $lineNumber,
+                            'code' => $codePersonnel,
+                            'nom' => $nom,
+                            'prenom' => $prenom,
+                            'status' => 'error',
+                            'message' => $result['message']
+                        ];
+                    }
+                }
+                
+                fclose($handle);
+                unlink($tmpPath); // Nettoyer le fichier temporaire
+                
+                echo json_encode([
+                    'success' => true,
+                    'results' => $results,
+                    'message' => "Import terminé: {$results['success']} succès, {$results['errors']} erreurs"
+                ]);
+                
+            } else {
+                throw new Exception('Méthode non autorisée pour /whitelist/upload');
+            }
+            break;
+
+        case 'whitelist/list':
+            if ($method === 'GET') {
+                // Lister les agents de la whitelist avec nom et prénom
+                $stmt = $pdo->query("
+                    SELECT 
+                        code_personnel,
+                        nom,
+                        prenom,
+                        actif,
+                        created_at,
+                        updated_at
+                    FROM agents_whitelist 
+                    ORDER BY code_personnel
+                ");
+                
+                $whitelist = $stmt->fetchAll();
+                
+                echo json_encode([
+                    'success' => true,
+                    'whitelist' => $whitelist
+                ]);
+            } else {
+                throw new Exception('Méthode non autorisée pour /whitelist/list');
+            }
+            break;
+
         default:
             // Page d'accueil de l'API avec documentation complète
             echo json_encode([
@@ -1169,7 +1519,7 @@ try {
                     'GET /' => 'Cette page d\'accueil',
                     'GET /test' => 'Test de connexion et santé de l\'API',
                     'GET /agents' => 'Liste de tous les agents inscrits',
-                    'POST /agents' => 'Ajouter un nouvel agent',
+                    'POST /agents' => 'Ajouter un nouvel agent (avec validation whitelist)',
                     'PUT /agents?code=CODE' => 'Modifier un agent (statut, etc.)',
                     'DELETE /agents?code=CODE' => 'Supprimer un agent',
                     'GET /search?q=CODE' => 'Rechercher un agent par code personnel',
@@ -1178,7 +1528,8 @@ try {
                     'GET /stats' => 'Statistiques complètes avec statuts',
                     'GET /export' => 'Télécharger export CSV complet',
                     'POST /login' => 'Authentification (username, password)',
-                    'GET /verify-token' => 'Vérifier la validité d\'un token d\'authentification'
+                    'GET /verify-token' => 'Vérifier la validité d\'un token d\'authentification',
+                    'POST /whitelist' => 'Gestion de la whitelist (admin uniquement)'
                 ],
                 'statuts_disponibles' => ['inscrit', 'present', 'absent', 'annule'],
                 'capacite_max_par_creneau' => 14,

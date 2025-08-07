@@ -61,10 +61,6 @@ async function resolveApiBase() {
   return API_BASE;
 }
 
-// Debug pour identifier le problème
-console.log('DEBUG - Environment:', process.env.NODE_ENV);
-console.log('DEBUG - ENV_CONFIG.API_BASE_URL:', ENV_CONFIG?.API_BASE_URL);
-console.log('DEBUG - API_BASE final:', API_BASE);
 
 export async function apiGet(path = '', params = {}) {
   const apiBase = await resolveApiBase();
