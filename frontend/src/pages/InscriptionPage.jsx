@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { apiPost, apiGet } from '../api';
 import { useAlertDrawer } from '../contexts/AlertContext.tsx';
 import { MaterialIconWithFallback } from '../utils/iconFallback';
+import SecurityRulesModal from '../components/SecurityRulesModal';
+import { useSecurityRulesAcceptance } from '../hooks/useSecurityRulesAcceptance';
 
 export default function InscriptionPage() {
   const { showAlert } = useAlertDrawer();
+  const { hasAcceptedRules, isLoading: rulesLoading, acceptRules } = useSecurityRulesAcceptance();
   const [form, setForm] = useState({
     codePersonnel: '',
     nom: '',
@@ -299,13 +302,28 @@ export default function InscriptionPage() {
 
 
 
-  return (
-    <div className="gestion-container" style={{padding: '40px 20px', margin: '0 auto'}}>
-      <h2>📝 Inscription d'un agent</h2>
-      <p>Journée des Proches - Système d'inscription en amont</p>
-      <div style={{marginBottom: '20px', padding: '12px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'center'}}>
-        <strong>ℹ️ Durée de visite estimée à 2h</strong>
+  if (rulesLoading) {
+    return (
+      <div className="gestion-container" style={{padding: '40px 20px', margin: '0 auto', textAlign: 'center'}}>
+        <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>
+        <p>Chargement...</p>
       </div>
+    );
+  }
+
+  return (
+    <>
+      <SecurityRulesModal
+        isOpen={!hasAcceptedRules}
+        onAccept={acceptRules}
+      />
+
+      <div className="gestion-container" style={{padding: '40px 20px', margin: '0 auto'}}>
+        <h2>📝 Inscription d'un agent</h2>
+        <p>Journée des Proches - Système d'inscription en amont</p>
+        <div style={{marginBottom: '20px', padding: '12px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'center'}}>
+          <strong>ℹ️ Durée de visite estimée à 2h</strong>
+        </div>
 
       {loading && (
         <wcs-spinner style={{ display: 'block', margin: '16px auto' }}></wcs-spinner>
@@ -471,6 +489,7 @@ export default function InscriptionPage() {
           {loading ? <wcs-spinner size="small"></wcs-spinner> : "S'inscrire"}
         </wcs-button>
       </form>
-    </div>
+      </div>
+    </>
   );
 } 

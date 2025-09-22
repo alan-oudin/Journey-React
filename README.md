@@ -196,7 +196,7 @@ Lors de l'inscription, le système :
 ### 🛠️ Déploiement & Administration
 - **[DEPLOIEMENT_PRODUCTION.md](Docs/DEPLOIEMENT_PRODUCTION.md)** : Guide de déploiement XAMPP
 - **[ADMIN_GUIDE.md](Docs/ADMIN_GUIDE.md)** : Guide d'administration complet
-- **[BROWSER_COMPATIBILITY.md](frontend/BROWSER_COMPATIBILITY.md)** : Compatibilité navigateurs
+- **[BROWSER_COMPATIBILITY.md](Docs/BROWSER_COMPATIBILITY.md)** : Compatibilité navigateurs
 
 ### 🔐 Scripts Whitelist
 - **[README_IMPORT.md](backend/scripts/README_IMPORT.md)** : Guide d'import whitelist
