@@ -4,10 +4,12 @@ import { useAlertDrawer } from '../contexts/AlertContext.tsx';
 import { MaterialIconWithFallback } from '../utils/iconFallback';
 import SecurityRulesModal from '../components/SecurityRulesModal';
 import { useSecurityRulesAcceptance } from '../hooks/useSecurityRulesAcceptance';
+import { downloadReservationPDF } from '../utils/pdfGenerator';
 
 export default function InscriptionPage() {
   const { showAlert } = useAlertDrawer();
   const { hasAcceptedRules, isLoading: rulesLoading, acceptRules } = useSecurityRulesAcceptance();
+  const [lastRegistrationData, setLastRegistrationData] = useState(null);
   const [form, setForm] = useState({
     codePersonnel: '',
     nom: '',
@@ -223,12 +225,17 @@ export default function InscriptionPage() {
         restauration_sur_place: form.restaurationSurPlace ? 1 : 0
       });
       
+      // Sauvegarder les données pour le PDF
+      setLastRegistrationData({...form});
+
       // Afficher un message de succès
       showAlert({
         title: 'Succès',
         subtitle: 'Inscription réussie !',
         intent: 'success'
       });
+
+      // Réinitialiser le formulaire
       setForm({ codePersonnel: '', nom: '', prenom: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
       
       // Recharger les créneaux pour mettre à jour les indicateurs de places
@@ -489,6 +496,39 @@ export default function InscriptionPage() {
           {loading ? <wcs-spinner size="small"></wcs-spinner> : "S'inscrire"}
         </wcs-button>
       </form>
+
+      {/* Bouton de téléchargement PDF après inscription réussie */}
+      {lastRegistrationData && (
+        <div style={{
+          marginTop: '20px',
+          padding: '16px',
+          backgroundColor: '#e8f5e8',
+          borderRadius: '8px',
+          textAlign: 'center',
+          border: '1px solid #4caf50'
+        }}>
+          <h3 style={{ color: '#2e7d32', marginBottom: '12px', fontSize: '16px' }}>
+            ✅ Inscription confirmée !
+          </h3>
+          <p style={{ color: '#333', marginBottom: '16px', fontSize: '14px' }}>
+            Votre réservation pour le {lastRegistrationData.heureArrivee} a été enregistrée.
+          </p>
+          <wcs-button
+            color="secondary"
+            onClick={() => downloadReservationPDF(lastRegistrationData)}
+            style={{ marginRight: '10px' }}
+          >
+            📄 Télécharger le récapitulatif PDF
+          </wcs-button>
+          <wcs-button
+            color="primary"
+            fill="outline"
+            onClick={() => setLastRegistrationData(null)}
+          >
+            Nouvelle inscription
+          </wcs-button>
+        </div>
+      )}
       </div>
     </>
   );
