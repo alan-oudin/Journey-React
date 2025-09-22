@@ -12,8 +12,10 @@ journey/
 │   ├── CHANGELOG.md            # Historique des modifications
 │   ├── DEPLOIEMENT_PRODUCTION.md # Guide de déploiement
 │   └── ENVIRONMENTS.md         # Configuration multi-environnements
-├── script/                      # 🛠️ Scripts utiles
-│   └── api-test.js             # Script de test de l'API
+├── scripts/                     # 🛠️ Scripts utiles
+│   ├── api-test.js             # Script de test de l'API
+│   ├── build-production.bat    # Script de build production (Windows)
+│   └── build-production.sh     # Script de build production (Unix)
 ├── package.json                # Dependencies globales (node-fetch, wcs)
 │
 ├── backend/                    # 🔧 API PHP + Base de données
@@ -103,6 +105,87 @@ cd frontend && npm run build
 
 # Déployer les fichiers build/ sur le serveur XAMPP
 ```
+
+## 🏗️ Build & Distribution
+
+### Script de Build
+
+Le script `npm run build` utilise **Create React App** pour générer une version optimisée de l'application dans le dossier `dist/`.
+
+#### Commande de Build
+```bash
+cd frontend
+npm run build
+```
+
+#### Processus de Build
+1. **Compilation** : Transpilation du code React/JSX en JavaScript standard
+2. **Optimisation** : Minification des fichiers CSS/JS et optimisation des images
+3. **Bundling** : Regroupement des modules avec Webpack
+4. **Génération** : Création du dossier `build/` avec les fichiers optimisés
+
+#### Structure du dossier `build/`
+```
+frontend/build/
+├── index.html              # 📄 Page principale optimisée
+├── asset-manifest.json     # 📋 Manifest des assets
+├── service-worker.js       # 🔧 Service Worker PWA
+├── manifest.json          # 📱 Manifest PWA
+├── favicon.ico            # 🖼️ Favicon
+├── robots.txt             # 🤖 Instructions robots
+├── static/                # 📁 Assets statiques optimisés
+│   ├── css/              # 🎨 Fichiers CSS minifiés avec hash
+│   ├── js/               # ⚡ Fichiers JS minifiés avec hash
+│   └── media/            # 🖼️ Images et fonts optimisées
+├── fonts/                # 🔤 Polices Avenir SNCF
+└── logo/                 # 🏢 Logos SNCF
+```
+
+#### Configuration automatique selon l'environnement
+- **DEV (WAMP)** : `homepage: "/"` - Serveur de développement
+- **PROD (XAMPP)** : `homepage: "/journey/"` - Sous-répertoire de production
+
+#### Optimisations appliquées
+- ✅ **Minification** : Réduction de 60-80% de la taille des fichiers
+- ✅ **Tree Shaking** : Suppression du code inutilisé
+- ✅ **Code Splitting** : Chargement asynchrone des composants
+- ✅ **Cache Busting** : Hash dans les noms de fichiers pour invalidation cache
+- ✅ **Service Worker** : Mise en cache intelligente pour utilisation offline
+- ✅ **Compression** : Préparé pour gzip/brotli
+
+#### Déploiement
+
+##### Option 1 : Build manuel
+```bash
+# 1. Générer le build
+cd frontend && npm run build
+
+# 2. Copier le contenu de build/ vers le serveur web
+# Pour XAMPP : copier dans htdocs/journey/
+# Pour Apache : copier dans var/www/html/journey/
+```
+
+##### Option 2 : Script de build production automatisé 🚀
+```bash
+# Depuis la racine du projet
+scripts\build-production.bat
+
+# Ou avec version personnalisée
+scripts\build-production.bat v2.1.0
+```
+
+**Avantages du script automatisé :**
+- ✅ **Build complet** : Frontend + Backend optimisés
+- ✅ **Package prêt** : Archive ZIP pour déploiement direct
+- ✅ **Dependencies production** : Composer optimisé sans dev
+- ✅ **Documentation incluse** : Instructions DEPLOYMENT.md
+- ✅ **Structure optimale** : Fichiers organisés pour serveur web
+
+#### Variables d'environnement
+Le build utilise automatiquement :
+- `PUBLIC_URL=/journey/` (production)
+- Configuration API selon l'hostname de déploiement
+- Assets optimisés selon `browserslist` du package.json
 
 > **✨ Configuration Automatique** : Les URLs d'API et paramètres CORS sont configurés automatiquement selon l'environnement détecté !
 
@@ -209,6 +292,7 @@ Lors de l'inscription, le système :
 
 ### 🛠️ Scripts Utilitaires
 - **[api-test.js](scripts/api-test.js)** : Script de test de l'API
+- **[build-production.bat](scripts/build-production.bat)** : Script de build production automatisé
 - **[add_admin.php](backend/add_admin.php)** : Ajout d'administrateurs CLI
 
 ### 📁 Organisation
