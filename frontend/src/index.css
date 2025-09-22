@@ -162,6 +162,12 @@ h2 {
     min-width: 320px;
 }
 
+.form-columns .form-left {
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+}
+
 
 .form-columns .form-right {
     min-width: 520px;
@@ -284,6 +290,11 @@ wcs-form-field {
         align-items: center;
         justify-content: center;
         min-height: 80vh;
+    }
+
+    .form-columns .form-left {
+        position: static;
+        align-self: auto;
     }
 
     .form-separator {
