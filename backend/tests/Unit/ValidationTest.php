@@ -69,7 +69,7 @@ class ValidationTest extends TestCase {
     public function testValidateHeureArriveeWithValidSlots() {
         // Créneaux du matin
         $this->assertTrue(Validation::validateHeureArrivee('09:00'));
-        $this->assertTrue(Validation::validateHeureArrivee('12:40'));
+        $this->assertTrue(Validation::validateHeureArrivee('12:20'));
         
         // Créneaux de l'après-midi
         $this->assertTrue(Validation::validateHeureArrivee('13:00'));
@@ -78,7 +78,7 @@ class ValidationTest extends TestCase {
         // Créneaux manquants qui étaient problématiques
         $this->assertTrue(Validation::validateHeureArrivee('12:00'));
         $this->assertTrue(Validation::validateHeureArrivee('12:20'));
-        $this->assertTrue(Validation::validateHeureArrivee('12:40'));
+        $this->assertFalse(Validation::validateHeureArrivee('12:40'));
     }
     
     public function testValidateHeureArriveeWithInvalidSlots() {
@@ -92,7 +92,7 @@ class ValidationTest extends TestCase {
     
     public function testIsMatinCreneau() {
         $this->assertTrue(Validation::isMatinCreneau('09:00'));
-        $this->assertTrue(Validation::isMatinCreneau('12:40'));
+        $this->assertTrue(Validation::isMatinCreneau('12:20'));
         $this->assertTrue(Validation::isMatinCreneau('12:59'));
         
         $this->assertFalse(Validation::isMatinCreneau('13:00'));
@@ -114,12 +114,12 @@ class ValidationTest extends TestCase {
         $matin = Validation::getCreneauxMatin();
         $this->assertCount(12, $matin);
         $this->assertEquals('09:00', $matin[0]);
-        $this->assertEquals('12:40', $matin[count($matin) - 1]);
+        $this->assertEquals('12:20', $matin[count($matin) - 1]);
         
         // Vérifier que les créneaux problématiques sont présents
         $this->assertContains('12:00', $matin);
         $this->assertContains('12:20', $matin);
-        $this->assertContains('12:40', $matin);
+        $this->assertNotContains('12:40', $matin);
     }
     
     public function testGetCreneauxApresMidi() {
@@ -138,7 +138,7 @@ class ValidationTest extends TestCase {
         // Vérifier que tous les créneaux sont présents
         $this->assertContains('12:00', $tous);
         $this->assertContains('12:20', $tous);
-        $this->assertContains('12:40', $tous);
+        $this->assertNotContains('12:40', $tous);
     }
     
     public function testValidatePlacesDisponibles() {

@@ -678,7 +678,7 @@ try {
         case 'creneaux':
             if ($method === 'GET') {
                 // Définir tous les créneaux possibles (9h à 14h40 toutes les 20 minutes)
-                $creneauxMatin = ['09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40', '12:00', '12:20', '12:40'];
+                $creneauxMatin = ['09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40', '12:00', '12:20'];
                 $creneauxApresMidi = ['13:00', '13:20', '13:40', '14:00', '14:20', '14:40'];
 
                 // Récupérer les statistiques (seulement les agents inscrits et présents comptent pour la capacité)
@@ -746,9 +746,9 @@ try {
                         COUNT(*) as total_agents,
                         SUM(nombre_proches) as total_proches,
                         SUM(nombre_proches + 1) as total_personnes,
-                        SUM(CASE WHEN heure_arrivee BETWEEN '09:00' AND '12:40' THEN 1 ELSE 0 END) as agents_matin,
+                        SUM(CASE WHEN heure_arrivee BETWEEN '09:00' AND '12:20' THEN 1 ELSE 0 END) as agents_matin,
                         SUM(CASE WHEN heure_arrivee BETWEEN '13:00' AND '14:40' THEN 1 ELSE 0 END) as agents_apres_midi,
-                        SUM(CASE WHEN heure_arrivee BETWEEN '09:00' AND '12:40' THEN (nombre_proches + 1) ELSE 0 END) as personnes_matin,
+                        SUM(CASE WHEN heure_arrivee BETWEEN '09:00' AND '12:20' THEN (nombre_proches + 1) ELSE 0 END) as personnes_matin,
                         SUM(CASE WHEN heure_arrivee BETWEEN '13:00' AND '14:40' THEN (nombre_proches + 1) ELSE 0 END) as personnes_apres_midi,
                         -- Statistiques par statut
                         SUM(CASE WHEN statut = 'inscrit' THEN 1 ELSE 0 END) as agents_inscrits,
@@ -806,7 +806,7 @@ try {
                         (nombre_proches + 1) as total_personnes,
                         heure_arrivee,
                         CASE 
-                            WHEN heure_arrivee BETWEEN '09:00' AND '12:40' THEN 'Matin'
+                            WHEN heure_arrivee BETWEEN '09:00' AND '12:20' THEN 'Matin'
                             WHEN heure_arrivee BETWEEN '13:00' AND '14:40' THEN 'Après-midi'
                             ELSE 'Autre'
                         END as periode,

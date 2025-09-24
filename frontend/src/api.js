@@ -102,28 +102,63 @@ export async function apiPost(path = '', data = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(data),
-    credentials: 'include',
-    signal: createTimeoutSignal(ENV_CONFIG.API_TIMEOUT)
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+      credentials: 'include',
+      signal: createTimeoutSignal(ENV_CONFIG.API_TIMEOUT)
+    });
+  } catch (fetchError) {
+    // Gestion des erreurs de réseau et d'annulation
+    if (fetchError.name === 'AbortError') {
+      throw new Error('Délai d\'attente dépassé. Veuillez vérifier votre connexion et réessayer.');
+    } else if (fetchError.message.includes('interrupted')) {
+      throw new Error('Connexion interrompue. Veuillez réessayer.');
+    } else if (fetchError.message.includes('fetch')) {
+      throw new Error('Erreur de connexion au serveur. Vérifiez que le serveur est démarré.');
+    }
+    throw fetchError;
+  }
   
   if (!response.ok) {
     const errorText = await response.text();
     devLog(`POST ${path} - Error:`, errorText);
-    
+
+    // Gestion spécifique par code de statut
+    if (response.status === 403) {
+      try {
+        const errorJson = JSON.parse(errorText);
+        const errorMessage = errorJson.error || errorJson.message || 'Accès non autorisé';
+        throw new Error(errorMessage);
+      } catch (parseError) {
+        throw new Error('Vérifiez vos informations d\'inscription.');
+      }
+    }
+
     try {
       const errorJson = JSON.parse(errorText);
       const errorMessage = errorJson.error || errorJson.message || 'Erreur API : ' + response.status;
       throw new Error(errorMessage);
     } catch (parseError) {
       // Si c'est notre propre erreur (pas une erreur de parsing), on la relance
-      if (parseError.message.startsWith('Un agent') || parseError.message.startsWith('Erreur API')) {
+      if (parseError.message.startsWith('Un agent') || parseError.message.startsWith('Erreur API') || parseError.message.startsWith('Accès non autorisé')) {
         throw parseError;
       }
-      throw new Error('Erreur API : ' + response.status);
+
+      // Messages d'erreur personnalisés selon le code de statut
+      switch (response.status) {
+        case 400:
+          throw new Error('Données de requête invalides. Vérifiez les informations saisies.');
+        case 404:
+          throw new Error('Service non trouvé. Contactez l\'administrateur.');
+        case 500:
+          throw new Error('Erreur interne du serveur. Veuillez réessayer plus tard.');
+        default:
+          throw new Error('Erreur de communication avec le serveur (Code: ' + response.status + ')');
+      }
     }
   }
   

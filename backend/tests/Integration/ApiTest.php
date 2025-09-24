@@ -31,7 +31,7 @@ class ApiTest extends TestCase {
         $this->assertContains('09:00', $matinCreneaux);
         $this->assertContains('12:00', $matinCreneaux);
         $this->assertContains('12:20', $matinCreneaux);
-        $this->assertContains('12:40', $matinCreneaux);
+        $this->assertNotContains('12:40', $matinCreneaux);
         
         // Vérifier que les créneaux de l'après-midi sont corrects
         $apresMidiCreneaux = array_keys($data['apres-midi']);
@@ -39,7 +39,7 @@ class ApiTest extends TestCase {
         $this->assertContains('14:40', $apresMidiCreneaux);
         
         // Vérifier le nombre total de créneaux
-        $this->assertCount(12, $matinCreneaux); // 12 créneaux matin
+        $this->assertCount(11, $matinCreneaux); // 11 créneaux matin
         $this->assertCount(6, $apresMidiCreneaux); // 6 créneaux après-midi
     }
     
@@ -120,7 +120,7 @@ class ApiTest extends TestCase {
         $this->assertIsNumeric($data['agents_apres_midi']);
         
         // Vérifier les valeurs attendues pour les créneaux
-        $this->assertEquals(12, $data['nb_creneaux_matin']);
+        $this->assertEquals(11, $data['nb_creneaux_matin']);
         $this->assertEquals(6, $data['nb_creneaux_apres_midi']);
     }
     
@@ -262,7 +262,7 @@ class ApiTest extends TestCase {
                 'total_agents' => 10,
                 'agents_matin' => 6,
                 'agents_apres_midi' => 4,
-                'nb_creneaux_matin' => 12,
+                'nb_creneaux_matin' => 11,
                 'nb_creneaux_apres_midi' => 6,
                 'taux_occupation_matin' => 0.5,
                 'taux_occupation_apres_midi' => 0.67

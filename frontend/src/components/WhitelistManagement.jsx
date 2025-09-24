@@ -123,7 +123,11 @@ export default function WhitelistManagement() {
     }
 
     try {
-      const response = await apiPost('whitelist', newAgent);
+      const response = await apiPost('whitelist', {
+        code_personnel: newAgent.codePersonnel,
+        nom: newAgent.nom,
+        prenom: newAgent.prenom
+      });
       if (response.success) {
         addAlert('Agent ajouté à la whitelist avec succès', 'success');
         setShowAddModal(false);

@@ -24,7 +24,7 @@ describe('InscriptionPage', () => {
       matin: {
         '09:00': { places_restantes: 10, complet: false },
         '09:20': { places_restantes: 5, complet: false },
-        '12:40': { places_restantes: 14, complet: false }
+        '12:20': { places_restantes: 14, complet: false }
       },
       'apres-midi': {
         '13:00': { places_restantes: 8, complet: false },
@@ -51,7 +51,7 @@ describe('InscriptionPage', () => {
     render(<InscriptionPage />);
     
     await waitFor(() => {
-      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h40)')).toBeInTheDocument();
+      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h20)')).toBeInTheDocument();
       expect(screen.getByText('🌅 Créneaux de l\'après-midi (13h00 - 14h40)')).toBeInTheDocument();
     }, { timeout: 10000 });
     
@@ -111,7 +111,7 @@ describe('InscriptionPage', () => {
     render(<InscriptionPage />);
     
     await waitFor(() => {
-      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h40)')).toBeInTheDocument();
+      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h20)')).toBeInTheDocument();
     });
     
     // Remplir le formulaire
@@ -163,7 +163,7 @@ describe('InscriptionPage', () => {
     render(<InscriptionPage />);
     
     await waitFor(() => {
-      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h40)')).toBeInTheDocument();
+      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h20)')).toBeInTheDocument();
     });
     
     // Remplir le formulaire minimal
@@ -208,7 +208,7 @@ describe('InscriptionPage', () => {
     render(<InscriptionPage />);
     
     await waitFor(() => {
-      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h40)')).toBeInTheDocument();
+      expect(screen.getByText('🌅 Créneaux du matin (9h00 - 12h20)')).toBeInTheDocument();
     });
     
     // Remplir le formulaire avec trop de proches

@@ -255,9 +255,17 @@ export default function InscriptionPage() {
       const msg = (e.message || '').toLowerCase();
       
       // Gestion spécifique des erreurs selon le type
-      if ((msg.includes('agent') && (msg.includes('déjà inscrit') || msg.includes('deja inscrit') || msg.includes('existe'))) || msg.includes('code personnel')) {
+      if (msg.includes('agent non autorisé') || msg.includes('nom/prénom incorrect') || msg.includes('not_in_whitelist') || msg.includes('identity_mismatch')) {
+        const errorMessage = "Veuillez vérifier les informations saisies. Assurez-vous que votre code personnel, nom et prénom correspondent exactement aux données de votre dossier administratif.";
+
+        showAlert({
+          title: 'Erreur d\'autorisation',
+          subtitle: errorMessage,
+          intent: 'error'
+        });
+      } else if ((msg.includes('agent') && (msg.includes('déjà inscrit') || msg.includes('deja inscrit') || msg.includes('existe'))) || msg.includes('code personnel')) {
         const errorMessage = "Ce code personnel est déjà utilisé. Chaque agent ne peut s'inscrire qu'une seule fois.";
-        
+
         showAlert({
           title: 'Erreur',
           subtitle: errorMessage,
@@ -271,13 +279,25 @@ export default function InscriptionPage() {
           subtitle: errorMessage,
           intent: 'error'
         });
-      } else if (msg.includes('network') || msg.includes('fetch')) {
+      } else if (msg.includes('délai') || msg.includes('timeout') || msg.includes('attente dépassé')) {
         showAlert({
-          title: 'Erreur',
-          subtitle: "Erreur de connexion au serveur. Vérifiez que WAMP est démarré et réessayez.",
+          title: 'Délai dépassé',
+          subtitle: e.message,
           intent: 'error'
         });
-      } else if (msg.includes('500')) {
+      } else if (msg.includes('connexion interrompue')) {
+        showAlert({
+          title: 'Connexion interrompue',
+          subtitle: e.message,
+          intent: 'error'
+        });
+      } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('connexion au serveur')) {
+        showAlert({
+          title: 'Erreur de connexion',
+          subtitle: e.message,
+          intent: 'error'
+        });
+      } else if (msg.includes('500') || msg.includes('serveur interne')) {
         showAlert({
           title: 'Erreur',
           subtitle: "Erreur du serveur. Vérifiez la base de données et les logs du serveur.",
@@ -297,8 +317,8 @@ export default function InscriptionPage() {
 
   // Créneaux séparés par période
   const creneauxMatin = [
-    '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', 
-    '11:00', '11:20', '11:40', '12:00', '12:20', '12:40'
+    '09:00', '09:20', '09:40', '10:00', '10:20', '10:40',
+    '11:00', '11:20', '11:40', '12:00', '12:20'
   ];
 
   const creneauxApresMidi = [
@@ -419,7 +439,7 @@ export default function InscriptionPage() {
                   {/* Section Matin */}
                   <div style={{ marginBottom: 32 }}>
                     <div style={{ marginBottom: 16, padding: '8px 16px', backgroundColor: '#e3f2fd', borderRadius: '8px', textAlign: 'center' }}>
-                      <strong>🌅 Créneaux du matin (9h00 - 12h40)</strong>
+                      <strong>🌅 Créneaux du matin (9h00 - 12h20)</strong>
                       <div style={{ fontSize: '0.9em', color: '#666', marginTop: '4px' }}>
                         {creneauxMatin.length} créneaux disponibles
                       </div>

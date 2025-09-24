@@ -86,7 +86,7 @@ describe('Validation Functions', () => {
     test('should validate correct time slots', () => {
       // Créneaux du matin
       expect(validateHeureArrivee('09:00')).toBe(true);
-      expect(validateHeureArrivee('12:40')).toBe(true);
+      expect(validateHeureArrivee('12:20')).toBe(true);
       
       // Créneaux de l'après-midi
       expect(validateHeureArrivee('13:00')).toBe(true);
@@ -107,7 +107,7 @@ describe('Validation Functions', () => {
   describe('isMatinCreneau and isApresMidiCreneau', () => {
     test('should correctly identify morning slots', () => {
       expect(isMatinCreneau('09:00')).toBe(true);
-      expect(isMatinCreneau('12:40')).toBe(true);
+      expect(isMatinCreneau('12:20')).toBe(true);
       expect(isMatinCreneau('12:59')).toBe(true);
     });
 
@@ -128,12 +128,12 @@ describe('Validation Functions', () => {
   describe('Creneaux getters', () => {
     test('should return correct morning slots', () => {
       const matin = getCreneauxMatin();
-      expect(matin).toHaveLength(12);
+      expect(matin).toHaveLength(11);
       expect(matin[0]).toBe('09:00');
-      expect(matin[matin.length - 1]).toBe('12:40');
+      expect(matin[matin.length - 1]).toBe('12:20');
       expect(matin).toContain('12:00');
       expect(matin).toContain('12:20');
-      expect(matin).toContain('12:40');
+      expect(matin).not.toContain('12:40');
     });
 
     test('should return correct afternoon slots', () => {
@@ -145,14 +145,14 @@ describe('Validation Functions', () => {
 
     test('should return all slots correctly', () => {
       const tous = getTousCreneaux();
-      expect(tous).toHaveLength(18); // 12 + 6
+      expect(tous).toHaveLength(17); // 11 + 6
       expect(tous[0]).toBe('09:00');
       expect(tous[tous.length - 1]).toBe('14:40');
       
       // Vérifier que les créneaux manquants sont bien présents
       expect(tous).toContain('12:00');
       expect(tous).toContain('12:20');
-      expect(tous).toContain('12:40');
+      expect(tous).not.toContain('12:40');
     });
   });
 

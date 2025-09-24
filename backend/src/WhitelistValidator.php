@@ -17,11 +17,23 @@ class WhitelistValidator
     }
 
     /**
+     * Normalise une chaîne en supprimant les accents
+     */
+    protected function normalizeString(string $str): string
+    {
+        // Supprimer les accents en convertissant vers ASCII
+        $str = iconv('UTF-8', 'ASCII//TRANSLIT', $str);
+        // Nettoyer les caractères spéciaux restants
+        $str = preg_replace('/[^A-Za-z0-9\s\-]/', '', $str);
+        return strtoupper(trim($str));
+    }
+
+    /**
      * Génère un hash sécurisé pour la whitelist
      */
-    private function hashValue(string $value): string 
+    protected function hashValue(string $value): string
     {
-        return hash('sha256', strtoupper(trim($value)) . $this->salt);
+        return hash('sha256', $this->normalizeString($value) . $this->salt);
     }
 
     /**
@@ -122,7 +134,7 @@ class WhitelistValidator
                 updated_at = CURRENT_TIMESTAMP
             ");
 
-            $stmt->execute([$codePersonnel, strtoupper(trim($nom)), trim($prenom), $nomHash, $prenomHash]);
+            $stmt->execute([$codePersonnel, $this->normalizeString($nom), $this->normalizeString($prenom), $nomHash, $prenomHash]);
 
             return [
                 'success' => true,

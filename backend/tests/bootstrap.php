@@ -90,7 +90,6 @@ function getMockCreneauxData() {
             '11:40' => ['places_restantes' => 6, 'complet' => false],
             '12:00' => ['places_restantes' => 10, 'complet' => false],
             '12:20' => ['places_restantes' => 5, 'complet' => false],
-            '12:40' => ['places_restantes' => 14, 'complet' => false]
         ],
         'apres-midi' => [
             '13:00' => ['places_restantes' => 8, 'complet' => false],

@@ -12,7 +12,7 @@ const STATUTS = [
 ];
 
 const creneauxMatin = [
-  '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40','12:00','12:20','12:40'
+  '09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40','12:00','12:20'
 ];
 const creneauxApresMidi = [
   '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
@@ -366,7 +366,7 @@ export default function GestionPage() {
               <wcs-card mode="flat" style={{minWidth: 280, width: '100%', maxWidth: 400}}>
                 <wsc-card-body>
                   <wsc-card-header>
-                    <span style={{fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center', display: 'block',marginBlock:'15px'}}>🌅 Matin (9h00 - 12h40)</span>
+                    <span style={{fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center', display: 'block',marginBlock:'15px'}}>🌅 Matin (9h00 - 12h20)</span>
                   </wsc-card-header>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
