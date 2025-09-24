@@ -82,7 +82,8 @@ error_log("Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'undefined'));
 error_log("Path: " . ($_GET['path'] ?? 'undefined'));
 error_log("=== CORS DEBUG END ===");
 
-// Définir les en-têtes CORS basés sur l'environnement détecté
+// Définir les en-têtes CORS et Content-Type
+header("Content-Type: application/json; charset=utf-8");
 header("Access-Control-Allow-Origin: $corsOrigin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
@@ -276,10 +277,19 @@ try {
 
             } elseif ($method === 'POST') {
                 // Ajouter un nouvel agent
-                $input = json_decode(file_get_contents('php://input'), true);
+                $rawInput = file_get_contents('php://input');
+
+                // S'assurer que les données sont en UTF-8
+                if (!mb_check_encoding($rawInput, 'UTF-8')) {
+                    $rawInput = mb_convert_encoding($rawInput, 'UTF-8');
+                }
+
+                $input = json_decode($rawInput, true);
 
                 if (!$input) {
-                    throw new Exception('Données JSON invalides');
+                    error_log("Erreur JSON decode: " . json_last_error_msg());
+                    error_log("Données reçues: " . $rawInput);
+                    throw new Exception('Données JSON invalides: ' . json_last_error_msg());
                 }
 
                 // Validation des champs requis (service retiré)
@@ -367,7 +377,7 @@ try {
                 $stmt->execute([
                     $input['code_personnel'],
                     strtoupper(trim($input['nom'])),
-                    ucfirst(strtolower(trim($input['prenom']))),
+                    trim($input['prenom']), // Garder la casse originale pour le prénom
                     (int)$input['nombre_proches'],
                     $statut,
                     $input['heure_arrivee'],
@@ -384,7 +394,7 @@ try {
                         'id' => $id,
                         'code_personnel' => $input['code_personnel'],
                         'nom' => strtoupper(trim($input['nom'])),
-                        'prenom' => ucfirst(strtolower(trim($input['prenom']))),
+                        'prenom' => trim($input['prenom']),
                         'nombre_proches' => (int)$input['nombre_proches'],
                         'statut' => $statut,
                         'heure_validation' => null,
