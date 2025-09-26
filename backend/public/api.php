@@ -347,11 +347,68 @@ try {
                     throw new Exception('Un agent avec ce code personnel est déjà inscrit');
                 }
 
+                // Vérifier si l'inscription est pour le créneau de 15h (réservé aux administrateurs)
+                if ($input['heure_arrivee'] === '15:00') {
+                    // Vérifier l'authentification admin
+                    $headers = getallheaders();
+                    $authHeader = $headers['Authorization'] ?? '';
+                    $isAdmin = false;
+
+                    if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                        $token = $matches[1];
+                        try {
+                            $payload = json_decode(base64_decode($token), true);
+                            if ($payload && isset($payload['exp']) && $payload['exp'] >= time()) {
+                                // Vérifier que l'utilisateur existe encore dans la base
+                                if (isset($payload['sub']) && isset($payload['username'])) {
+                                    $stmt = $pdo->prepare("SELECT role FROM admins WHERE id = ? AND username = ?");
+                                    $stmt->execute([$payload['sub'], $payload['username']]);
+                                    $admin = $stmt->fetch();
+
+                                    if ($admin) {
+                                        $isAdmin = true;
+                                        error_log("Admin validé pour créneau 15h: " . $payload['username'] . " (role: " . $admin['role'] . ")");
+                                    } else {
+                                        error_log("Admin non trouvé en base: " . $payload['username']);
+                                    }
+                                } else {
+                                    error_log("Token admin invalide: champs sub ou username manquants");
+                                }
+                            } else {
+                                error_log("Token admin expiré ou invalide");
+                            }
+                        } catch (Exception $e) {
+                            error_log("Erreur décodage token admin: " . $e->getMessage());
+                        }
+                    } else {
+                        error_log("Header Authorization manquant ou invalide pour créneau 15h");
+                    }
+
+                    if (!$isAdmin) {
+                        error_log("Accès refusé au créneau 15h - utilisateur non admin");
+                        http_response_code(403);
+                        echo json_encode([
+                            'error' => 'Créneau réservé aux bénévoles',
+                            'message' => 'Le créneau de 15h00 est réservé aux bénévoles. Veuillez contacter un administrateur pour vous inscrire sur ce créneau.',
+                            'error_type' => 'CRENEAU_RESERVE',
+                            'contact_admin' => true,
+                            'debug_auth' => $appDebug ? [
+                                'has_auth_header' => !empty($authHeader),
+                                'token_present' => !empty($matches[1] ?? ''),
+                            ] : null
+                        ]);
+                        return;
+                    } else {
+                        error_log("Accès autorisé au créneau 15h pour admin");
+                    }
+                }
+
                 // Vérifier la capacité du créneau (seulement pour les statuts 'inscrit' et 'present')
-                if (in_array($statut, ['inscrit', 'present'])) {
+                // Exception: pas de limite pour le créneau de 15h00 réservé aux bénévoles
+                if (in_array($statut, ['inscrit', 'present']) && $input['heure_arrivee'] !== '15:00') {
                     $stmt = $pdo->prepare("
-                        SELECT COALESCE(SUM(nombre_proches + 1), 0) as personnes_total 
-                        FROM agents_inscriptions 
+                        SELECT COALESCE(SUM(nombre_proches + 1), 0) as personnes_total
+                        FROM agents_inscriptions
                         WHERE heure_arrivee = ? AND statut IN ('inscrit', 'present')
                     ");
                     $stmt->execute([$input['heure_arrivee']]);
@@ -689,7 +746,7 @@ try {
             if ($method === 'GET') {
                 // Définir tous les créneaux possibles (9h à 14h40 toutes les 20 minutes)
                 $creneauxMatin = ['09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40', '12:00', '12:20'];
-                $creneauxApresMidi = ['13:00', '13:20', '13:40', '14:00', '14:20', '14:40'];
+                $creneauxApresMidi = ['13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'];
 
                 // Récupérer les statistiques (seulement les agents inscrits et présents comptent pour la capacité)
                 $stmt = $pdo->query("
@@ -733,13 +790,21 @@ try {
                 foreach ($creneauxApresMidi as $heure) {
                     $personnesTotal = isset($stats[$heure]) ? $stats[$heure]['personnes_total'] : 0;
                     $agentsInscrits = isset($stats[$heure]) ? $stats[$heure]['agents_inscrits'] : 0;
-                    $placesRestantes = max(0, 14 - $personnesTotal);
+
+                    // Pas de limite pour le créneau de 15h00
+                    if ($heure === '15:00') {
+                        $placesRestantes = 999; // Nombre illimité
+                        $complet = false;
+                    } else {
+                        $placesRestantes = max(0, 14 - $personnesTotal);
+                        $complet = $personnesTotal >= 14;
+                    }
 
                     $response['apres-midi'][$heure] = [
                         'agents_inscrits' => $agentsInscrits,
                         'personnes_total' => $personnesTotal,
                         'places_restantes' => $placesRestantes,
-                        'complet' => $personnesTotal >= 14
+                        'complet' => $complet
                     ];
                 }
 
@@ -757,9 +822,9 @@ try {
                         SUM(nombre_proches) as total_proches,
                         SUM(nombre_proches + 1) as total_personnes,
                         SUM(CASE WHEN heure_arrivee BETWEEN '09:00' AND '12:20' THEN 1 ELSE 0 END) as agents_matin,
-                        SUM(CASE WHEN heure_arrivee BETWEEN '13:00' AND '14:40' THEN 1 ELSE 0 END) as agents_apres_midi,
+                        SUM(CASE WHEN heure_arrivee BETWEEN '13:00' AND '15:00' THEN 1 ELSE 0 END) as agents_apres_midi,
                         SUM(CASE WHEN heure_arrivee BETWEEN '09:00' AND '12:20' THEN (nombre_proches + 1) ELSE 0 END) as personnes_matin,
-                        SUM(CASE WHEN heure_arrivee BETWEEN '13:00' AND '14:40' THEN (nombre_proches + 1) ELSE 0 END) as personnes_apres_midi,
+                        SUM(CASE WHEN heure_arrivee BETWEEN '13:00' AND '15:00' THEN (nombre_proches + 1) ELSE 0 END) as personnes_apres_midi,
                         -- Statistiques par statut
                         SUM(CASE WHEN statut = 'inscrit' THEN 1 ELSE 0 END) as agents_inscrits,
                         SUM(CASE WHEN statut = 'present' THEN 1 ELSE 0 END) as agents_presents,
@@ -817,7 +882,7 @@ try {
                         heure_arrivee,
                         CASE 
                             WHEN heure_arrivee BETWEEN '09:00' AND '12:20' THEN 'Matin'
-                            WHEN heure_arrivee BETWEEN '13:00' AND '14:40' THEN 'Après-midi'
+                            WHEN heure_arrivee BETWEEN '13:00' AND '15:00' THEN 'Après-midi'
                             ELSE 'Autre'
                         END as periode,
                         statut,
@@ -1523,6 +1588,7 @@ try {
             echo json_encode([
                 'api' => 'Journée des Proches API v2.4',
                 'status' => 'Prêt et fonctionnel - Sans champ service',
+                'evenement_date' => '04 octobre 2025',
                 'timestamp' => date('Y-m-d H:i:s'),
                 'database' => $dbname,
                 'endpoints' => [
@@ -1542,7 +1608,7 @@ try {
                     'POST /whitelist' => 'Gestion de la whitelist (admin uniquement)'
                 ],
                 'statuts_disponibles' => ['inscrit', 'present', 'absent', 'annule'],
-                'capacite_max_par_creneau' => 14,
+                'capacite_max_par_creneau' => '14 (sauf 15h00: illimité)',
                 'champs_agent' => ['code_personnel', 'nom', 'prenom', 'nombre_proches', 'heure_arrivee'],
                 'exemple_usage' => [
                     'recherche' => '/api.php?path=search&q=1234567A',

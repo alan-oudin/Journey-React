@@ -96,7 +96,7 @@ describe('Validation Functions', () => {
     test('should reject incorrect time slots', () => {
       expect(validateHeureArrivee('')).toBe(false);
       expect(validateHeureArrivee('08:00')).toBe(false); // trop tôt
-      expect(validateHeureArrivee('15:00')).toBe(false); // trop tard
+      expect(validateHeureArrivee('15:00')).toBe(true); // créneau valide maintenant
       expect(validateHeureArrivee('12:30')).toBe(false); // pas dans les créneaux
       expect(validateHeureArrivee('invalid')).toBe(false);
       expect(validateHeureArrivee(null)).toBe(false);

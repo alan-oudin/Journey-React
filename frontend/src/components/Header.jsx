@@ -84,7 +84,12 @@ function useAuth() {
     setIsAuthenticated(false);
     setUser(null);
     window.dispatchEvent(new CustomEvent('authStateChanged'));
+
+    // Rediriger vers la page d'accueil et rafraîchir
     navigate('/');
+    setTimeout(() => {
+      window.location.reload();
+    }, 100); // Petit délai pour s'assurer que la navigation s'est bien faite
   }, [navigate]);
 
   return { isAuthenticated, user, isLoading, checkAuthentication, handleLogout };

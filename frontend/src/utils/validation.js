@@ -27,7 +27,7 @@ export const validateHeureArrivee = (heure) => {
   const creneauxValides = [
     '09:00', '09:20', '09:40', '10:00', '10:20', '10:40',
     '11:00', '11:20', '11:40', '12:00', '12:20',
-    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40'
+    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
   ];
   
   return creneauxValides.includes(heure);
@@ -52,7 +52,7 @@ export const getCreneauxMatin = () => {
 
 export const getCreneauxApresMidi = () => {
   return [
-    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40'
+    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
   ];
 };
 

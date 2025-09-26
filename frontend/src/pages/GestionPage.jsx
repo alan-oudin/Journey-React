@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import StatCard from '../components/StatCard';
 import { apiGet, apiPut, apiDelete } from '../api';
 import { ENV_CONFIG } from '../config/environment';
+import { EVENT_CONFIG } from '../constants/event';
 
 const STATUTS = [
   { value: 'tous', label: 'Tous' },
@@ -312,7 +313,14 @@ export default function GestionPage() {
   return (
     <div className="gestion-container" style={{padding: '40px 20px'}}>
       <h2>👥 Gestion des inscriptions</h2>
-      <p>Journée des Proches - Vue d'ensemble et administration</p>
+      <div style={{marginBottom: '20px', padding: '16px', backgroundColor: '#e8f5e8', borderRadius: '8px', textAlign: 'center', border: '2px solid #4caf50'}}>
+        <div style={{fontSize: '1.1em', fontWeight: 'bold', color: '#2e7d32', marginBottom: '8px'}}>
+          📅 {EVENT_CONFIG.name} - {EVENT_CONFIG.date}
+        </div>
+        <div style={{fontSize: '0.9em', color: '#1b5e20'}}>
+          Vue d'ensemble et administration
+        </div>
+      </div>
 
       {/* Alertes WCS */}
       <wcs-alert-drawer>
@@ -405,6 +413,9 @@ export default function GestionPage() {
                   <wsc-card-header>
                     <span style={{fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center', display: 'block',marginBlock:'15px'}}>🌆 Après-midi (13h00 - 15h00)</span>
                   </wsc-card-header>
+                  <div style={{ padding: '8px', backgroundColor: '#fff3e0', borderRadius: '6px', margin: '8px 0', fontSize: '0.85em', color: '#e65100', textAlign: 'center' }}>
+                    <strong>ℹ️ Note :</strong> Le créneau de 15h00 est réservé aux bénévoles
+                  </div>
                 <wcs-divider style={{margin: '8px 0 8px 0'}}></wcs-divider>
                   <wsc-card-content>
                       <table style={{borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed'}}>
@@ -420,14 +431,20 @@ export default function GestionPage() {
                         <tbody>
                           {creneauxApresMidi.map(heure => {
                             const info = creneaux['apres-midi'][heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
+                            const isCreneauReserve = heure === '15:00';
                             return (
-                              <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
-                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>{heure}</td>
+                              <tr key={heure} style={{background: isCreneauReserve ? '#fff3e0' : info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
+                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>
+                                  {heure}
+                                  {isCreneauReserve && <span style={{color: '#ff6b00', fontSize: '0.75em', marginLeft: '4px'}}>🔒</span>}
+                                </td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.agents_inscrits}</td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.personnes_total}</td>
-                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.places_restantes}</td>
+                                <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>
+                                  {isCreneauReserve ? 'Illimité' : info.places_restantes}
+                                </td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.85em'}}>
-                                  {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
+                                  {isCreneauReserve ? <span style={{color: '#ff6b00'}}>RÉSERVÉ</span> : info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
                                 </td>
                               </tr>
                             );

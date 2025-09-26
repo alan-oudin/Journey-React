@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { EVENT_CONFIG } from '../constants/event';
 
 export const generateReservationPDF = (formData) => {
   const doc = new jsPDF();
@@ -13,21 +14,26 @@ export const generateReservationPDF = (formData) => {
 
   doc.setFontSize(16);
   doc.setTextColor(211, 47, 47);
-  doc.text('Journée des Proches', 20, 45);
+  doc.text(EVENT_CONFIG.name, 20, 45);
+
+  // Date de l'événement
+  doc.setFontSize(14);
+  doc.setTextColor(76, 175, 80);
+  doc.text(`Date: ${EVENT_CONFIG.date}`, 20, 60);
 
   // Ligne de séparation
   doc.setDrawColor(0, 0, 0);
-  doc.line(20, 55, 190, 55);
+  doc.line(20, 70, 190, 70);
 
   // Informations de l'agent
   doc.setFontSize(14);
   doc.setTextColor(40, 40, 40);
-  doc.text('INFORMATIONS DE L\'AGENT', 20, 70);
+  doc.text('INFORMATIONS DE L\'AGENT', 20, 85);
 
   doc.setFontSize(12);
   doc.setTextColor(80, 80, 80);
 
-  let yPosition = 85;
+  let yPosition = 100;
 
   doc.text(`Code Personnel: ${formData.codePersonnel}`, 20, yPosition);
   yPosition += 10;
@@ -54,6 +60,9 @@ export const generateReservationPDF = (formData) => {
   doc.setFontSize(12);
   doc.setTextColor(80, 80, 80);
 
+  doc.text(`Date: ${EVENT_CONFIG.date}`, 20, yPosition);
+  yPosition += 10;
+
   doc.text(`Heure d'arrivée: ${formData.heureArrivee}`, 20, yPosition);
   yPosition += 10;
 
@@ -73,13 +82,13 @@ export const generateReservationPDF = (formData) => {
   doc.setTextColor(80, 80, 80);
 
   const rappels = [
-    '• Stationnement obligatoire sur le site uniquement',
-    '• Stationnement en marche arrière obligatoire',
-    '• Se signaler à l\'entrée du site auprès de la personne responsable',
-    '• Se présenter 5-10 minutes avant le début du créneau',
-    '• Durée de visite limitée à 2 heures maximum',
-    '• Pièce d\'identité obligatoire pour tous les visiteurs',
-    '• Ponctualité requise pour respecter les créneaux'
+    '- Stationnement obligatoire sur le site uniquement',
+    '- Stationnement en marche arrière obligatoire',
+    '- Se signaler a l\'entree du site aupres de la personne responsable',
+    '- Se presenter 5-10 minutes avant le debut du creneau',
+    '- Duree de visite limitee a 2 heures maximum',
+    '- Piece d\'identite obligatoire pour tous les visiteurs',
+    '- Ponctualite requise pour respecter les creneaux'
   ];
 
   rappels.forEach(rappel => {

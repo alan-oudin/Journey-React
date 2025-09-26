@@ -84,7 +84,7 @@ class ValidationTest extends TestCase {
     public function testValidateHeureArriveeWithInvalidSlots() {
         $this->assertFalse(Validation::validateHeureArrivee(''));
         $this->assertFalse(Validation::validateHeureArrivee('08:00')); // trop tôt
-        $this->assertFalse(Validation::validateHeureArrivee('15:00')); // trop tard
+        $this->assertTrue(Validation::validateHeureArrivee('15:00')); // créneau valide maintenant
         $this->assertFalse(Validation::validateHeureArrivee('12:30')); // pas dans les créneaux
         $this->assertFalse(Validation::validateHeureArrivee('invalid'));
         $this->assertFalse(Validation::validateHeureArrivee(null));
