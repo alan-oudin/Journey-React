@@ -93,6 +93,8 @@ export default function InscriptionPage() {
   const [loading, setLoading] = useState(false);
   const [creneauxData, setCreneauxData] = useState({});
   const [loadingCreneaux, setLoadingCreneaux] = useState(false);
+  const [creneauxMatin, setCreneauxMatin] = useState([]);
+  const [creneauxApresMidi, setCreneauxApresMidi] = useState([]);
   // const [isAuthenticated, setIsAuthenticated] = useState(false); // Non utilisé actuellement
   // const [showInfoAlert, setShowInfoAlert] = useState(true); // Non utilisé actuellement
   const selectRef = useRef(null);
@@ -139,10 +141,24 @@ export default function InscriptionPage() {
           flatData[heure] = data['apres-midi'][heure];
         });
         setCreneauxData(flatData);
+
+        // Extraire les listes de créneaux depuis l'API
+        setCreneauxMatin(Object.keys(data.matin || {}).sort());
+        setCreneauxApresMidi(Object.keys(data['apres-midi'] || {}).sort());
       })
-      .catch(() => setCreneauxData({}))
+      .catch(() => {
+        setCreneauxData({});
+        // En cas d'erreur, utiliser les créneaux par défaut
+        setCreneauxMatin([
+          '09:00', '09:20', '09:40', '10:00', '10:20', '10:40',
+          '11:00', '11:20', '11:40', '12:00', '12:20'
+        ]);
+        setCreneauxApresMidi([
+          '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
+        ]);
+      })
       .finally(() => setLoadingCreneaux(false));
-    
+
     // Code pour vérifier l'authentification supprimé car non utilisé
   }, []);
 
@@ -267,6 +283,9 @@ export default function InscriptionPage() {
   const peutInscrire = (info, heure = null) => {
     if (!form.nombreProches && form.nombreProches !== '0') return true;
 
+    // Vérifier si le créneau est bloqué
+    if (info.bloque) return false;
+
     // Le créneau de 15h00 n'a pas de limite
     if (heure === '15:00') return true;
 
@@ -292,7 +311,7 @@ export default function InscriptionPage() {
     }
     setLoading(true);
     try {
-      await apiPost('agents', {
+      const response = await apiPost('agents', {
         code_personnel: form.codePersonnel,
         nom: form.nom,
         prenom: form.prenom,
@@ -300,7 +319,7 @@ export default function InscriptionPage() {
         heure_arrivee: form.heureArrivee,
         restauration_sur_place: form.restaurationSurPlace ? 1 : 0
       });
-      
+
       // Sauvegarder les données pour le PDF
       setLastRegistrationData({...form});
 
@@ -313,8 +332,21 @@ export default function InscriptionPage() {
 
       // Réinitialiser le formulaire
       setForm({ codePersonnel: '', nom: '', prenom: '', nombreProches: '', heureArrivee: '', restaurationSurPlace: false });
-      
-      // Recharger les créneaux pour mettre à jour les indicateurs de places
+
+      // Mettre à jour immédiatement les informations du créneau depuis la réponse
+      if (response.creneau_info) {
+        setCreneauxData(prevData => ({
+          ...prevData,
+          [response.creneau_info.heure]: {
+            ...prevData[response.creneau_info.heure],
+            personnes_total: response.creneau_info.personnes_total,
+            places_restantes: response.creneau_info.places_restantes,
+            complet: response.creneau_info.capacite !== 999 && response.creneau_info.personnes_total >= response.creneau_info.capacite
+          }
+        }));
+      }
+
+      // Recharger tous les créneaux pour s'assurer de la cohérence
       apiGet('creneaux')
         .then(data => {
           const flatData = {};
@@ -326,7 +358,10 @@ export default function InscriptionPage() {
           });
           setCreneauxData(flatData);
         })
-        .catch(() => setCreneauxData({}));
+        .catch(() => {
+          // En cas d'erreur, garder les données mises à jour localement
+          console.error('Erreur lors du rechargement des créneaux');
+        });
     } catch (e) {
       const msg = (e.message || '').toLowerCase();
       
@@ -390,20 +425,6 @@ export default function InscriptionPage() {
       setLoading(false);
     }
   };
-
-  // Créneaux séparés par période
-  const creneauxMatin = [
-    '09:00', '09:20', '09:40', '10:00', '10:20', '10:40',
-    '11:00', '11:20', '11:40', '12:00', '12:20'
-  ];
-
-  const creneauxApresMidi = [
-    '13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'
-  ];
-
-
-
-
 
   if (rulesLoading) {
     return (
@@ -529,16 +550,44 @@ export default function InscriptionPage() {
                     </div>
                     <div className="creneaux-grid">
                       {creneauxMatin.map(heure => {
-                        const info = creneauxData[heure] || { personnes_total: 0, places_restantes: 14, complet: false };
-                        const disabled = loading || info.complet || !peutInscrire(info, heure);
+                        const info = creneauxData[heure] || { personnes_total: 0, places_restantes: 14, complet: false, bloque: false, admin_only: false };
+                        const isCreneauReserve = info.admin_only || false;
+                        const isBloque = info.bloque || false;
+                        const disabled = loading || info.complet || !peutInscrire(info, heure) || (isCreneauReserve && !isAdmin) || isBloque;
+                        const bgColor = isBloque ? '#ffebee' : (isCreneauReserve ? '#fff3e0' : 'white');
+                        const borderColor = isBloque ? '3px solid #dc3545' : (form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc');
                         return (
-                          <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.5 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
-                            <div style={{ fontWeight: 'bold', fontSize: 18 }}>{heure}</div>
+                          <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.6 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: borderColor, backgroundColor: bgColor, position: 'relative' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
+                            {isBloque && (
+                              <div style={{ position: 'absolute', top: 4, right: 4, backgroundColor: '#dc3545', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7em', fontWeight: 'bold' }}>
+                                BLOQUÉ
+                              </div>
+                            )}
+                            <div style={{ fontWeight: 'bold', fontSize: 18, color: isBloque ? '#999' : 'inherit' }}>{heure}</div>
+                            {isBloque && (
+                              <div style={{ margin: '4px 0', fontSize: '0.85em', color: '#dc3545', fontWeight: 'bold' }}>
+                                🚫 Indisponible
+                              </div>
+                            )}
+                            {isBloque && info.raison_blocage && (
+                              <div style={{ margin: '4px 0', fontSize: '0.75em', color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
+                                {info.raison_blocage}
+                              </div>
+                            )}
+                            {!isBloque && isCreneauReserve && (
+                              <div style={{ margin: '4px 0', fontSize: '0.8em', color: '#ff6b00', fontWeight: 'bold' }}>
+                                {isAdmin ? '🔓 Admin connecté' : '🔒 Réservé aux bénévoles'}
+                              </div>
+                            )}
                             <div style={{ margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-                              <span>{info.places_restantes} places</span>
-                              {info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
-                              {!info.complet && !peutInscrire(info, heure) && form.nombreProches !== '' && <wcs-badge color="danger">Insuffisant</wcs-badge>}
-                              {!info.complet && peutInscrire(info, heure) && info.places_restantes <= 3 && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
+                              {!isBloque && !isCreneauReserve && <span>{info.places_restantes} places</span>}
+                              {!isBloque && isCreneauReserve && <span>Illimité</span>}
+                              {isBloque && <wcs-badge color="danger">⛔ BLOQUÉ</wcs-badge>}
+                              {!isBloque && info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
+                              {!isBloque && isCreneauReserve && !isAdmin && <wcs-badge color="warning">Admin requis</wcs-badge>}
+                              {!isBloque && isCreneauReserve && isAdmin && <wcs-badge color="success">Admin OK</wcs-badge>}
+                              {!isBloque && !info.complet && !peutInscrire(info, heure) && form.nombreProches !== '' && !isCreneauReserve && <wcs-badge color="danger">Insuffisant</wcs-badge>}
+                              {!isBloque && !info.complet && peutInscrire(info, heure) && info.places_restantes <= 3 && !isCreneauReserve && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
                             </div>
                             <div style={{ marginTop: 8 }}>
                               {form.heureArrivee === heure && (
@@ -574,26 +623,47 @@ export default function InscriptionPage() {
                     </div>
                     <div className="creneaux-grid">
                       {creneauxApresMidi.map(heure => {
-                        const info = creneauxData[heure] || { personnes_total: 0, places_restantes: 14, complet: false };
-                        const isCreneauReserve = heure === '15:00';
-                        const disabled = loading || info.complet || !peutInscrire(info, heure) || (isCreneauReserve && !isAdmin);
+                        const info = creneauxData[heure] || { personnes_total: 0, places_restantes: 14, complet: false, bloque: false, admin_only: false };
+                        const isCreneauReserve = info.admin_only || heure === '15:00'; // Fallback to 15:00 for backwards compatibility
+                        const isBloque = info.bloque || false;
+                        const disabled = loading || info.complet || !peutInscrire(info, heure) || (isCreneauReserve && !isAdmin) || isBloque;
+                        const bgColor = isBloque ? '#ffebee' : (isCreneauReserve ? '#fff3e0' : 'white');
+                        const borderColor = isBloque ? '3px solid #dc3545' : (form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc');
                         return (
-                          <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.5 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: form.heureArrivee === heure ? '2px solid #0074D9' : '1px solid #ccc', backgroundColor: isCreneauReserve ? '#fff3e0' : 'white' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
-                            <div style={{ fontWeight: 'bold', fontSize: 18 }}>{heure}</div>
-                            {isCreneauReserve && (
+                          <wcs-card key={heure} style={{ minWidth: 160, maxWidth: 180, margin: 0, padding: 12, opacity: disabled ? 0.6 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: disabled ? 'not-allowed' : 'pointer', border: borderColor, backgroundColor: bgColor, position: 'relative' }} onClick={() => !disabled && handleCheckboxChange(heure)}>
+                            {isBloque && (
+                              <div style={{ position: 'absolute', top: 4, right: 4, backgroundColor: '#dc3545', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7em', fontWeight: 'bold' }}>
+                                BLOQUÉ
+                              </div>
+                            )}
+                            <div style={{ fontWeight: 'bold', fontSize: 18, color: isBloque ? '#999' : 'inherit' }}>{heure}</div>
+                            {isBloque && (
+                              <div style={{ margin: '4px 0', fontSize: '0.85em', color: '#dc3545', fontWeight: 'bold' }}>
+                                🚫 Indisponible
+                              </div>
+                            )}
+                            {isBloque && info.raison_blocage && (
+                              <div style={{ margin: '4px 0', fontSize: '0.75em', color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
+                                {info.raison_blocage}
+                              </div>
+                            )}
+                            {!isBloque && isCreneauReserve && (
                               <div style={{ margin: '4px 0', fontSize: '0.8em', color: '#ff6b00', fontWeight: 'bold' }}>
                                 {isAdmin ? '🔓 Admin connecté' : '🔒 Réservé aux bénévoles'}
                               </div>
                             )}
                             <div style={{ margin: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-                              <span>
-                                {isCreneauReserve ? 'Illimité' : `${info.places_restantes} places`}
-                              </span>
-                              {info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
-                              {isCreneauReserve && !isAdmin && <wcs-badge color="warning">Admin requis</wcs-badge>}
-                              {isCreneauReserve && isAdmin && <wcs-badge color="success">Admin OK</wcs-badge>}
-                              {!info.complet && !peutInscrire(info, heure) && form.nombreProches !== '' && !isCreneauReserve && <wcs-badge color="danger">Insuffisant</wcs-badge>}
-                              {!info.complet && peutInscrire(info, heure) && info.places_restantes <= 3 && !isCreneauReserve && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
+                              {!isBloque && (
+                                <span>
+                                  {isCreneauReserve ? 'Illimité' : `${info.places_restantes} places`}
+                                </span>
+                              )}
+                              {isBloque && <wcs-badge color="danger">⛔ BLOQUÉ</wcs-badge>}
+                              {!isBloque && info.complet && <wcs-badge color="danger">Complet</wcs-badge>}
+                              {!isBloque && isCreneauReserve && !isAdmin && <wcs-badge color="warning">Admin requis</wcs-badge>}
+                              {!isBloque && isCreneauReserve && isAdmin && <wcs-badge color="success">Admin OK</wcs-badge>}
+                              {!isBloque && !info.complet && !peutInscrire(info, heure) && form.nombreProches !== '' && !isCreneauReserve && <wcs-badge color="danger">Insuffisant</wcs-badge>}
+                              {!isBloque && !info.complet && peutInscrire(info, heure) && info.places_restantes <= 3 && !isCreneauReserve && <wcs-badge color="warning">⚡ Limité</wcs-badge>}
                             </div>
                             <div style={{ marginTop: 8 }}>
                               {form.heureArrivee === heure && (

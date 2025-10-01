@@ -3,6 +3,7 @@ import GestionPage from './GestionPage';
 import AdminManagement from '../components/AdminManagement';
 import UserEditor from '../components/UserEditor';
 import WhitelistManagement from '../components/WhitelistManagement';
+import CreneauxManagement from '../components/CreneauxManagement';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('gestion');
@@ -46,6 +47,14 @@ export default function AdminPage() {
           <wcs-mat-icon icon="security"></wcs-mat-icon>
           Whitelist
         </wcs-button>
+        <wcs-button
+            shape={activeTab === 'creneaux' ? 'solid' : 'outline'}
+            color="primary"
+            onClick={() => setActiveTab('creneaux')}
+        >
+          <wcs-mat-icon icon="schedule"></wcs-mat-icon>
+          Créneaux
+        </wcs-button>
       </div>
 
       {/* Contenu principal */}
@@ -53,6 +62,7 @@ export default function AdminPage() {
       {activeTab === 'admins' && <AdminManagement />}
       {activeTab === 'users' && <UserEditor />}
       {activeTab === 'whitelist' && <WhitelistManagement />}
+      {activeTab === 'creneaux' && <CreneauxManagement />}
     </div>
   );
 }

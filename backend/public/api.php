@@ -177,8 +177,66 @@ try {
             INDEX idx_created (created_at),
             INDEX idx_nom (nom),
             INDEX idx_prenom (prenom)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci 
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         COMMENT='Whitelist sécurisée des agents autorisés - données hachées pour protection RGPD'
+    ");
+
+    // Créer la table pour le blocage des créneaux
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS creneaux_bloques (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            heure_creneau TIME NOT NULL COMMENT 'Heure du créneau bloqué',
+            date_creneau DATE NULL DEFAULT NULL COMMENT 'Date du créneau bloqué (NULL = bloqué pour toutes les dates)',
+            bloque TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Créneau bloqué (1) ou débloqué (0)',
+            raison VARCHAR(255) DEFAULT NULL COMMENT 'Raison du blocage',
+            created_by VARCHAR(50) DEFAULT NULL COMMENT 'Administrateur ayant créé le blocage',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_creneau (heure_creneau, date_creneau),
+            INDEX idx_heure_creneau (heure_creneau),
+            INDEX idx_bloque (bloque)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        COMMENT='Table pour gérer le blocage des créneaux horaires'
+    ");
+
+    // Créer la table pour la configuration des créneaux disponibles
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS creneaux_config (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            heure_creneau TIME NOT NULL UNIQUE COMMENT 'Heure du créneau',
+            periode VARCHAR(20) NOT NULL COMMENT 'Période: matin ou apres-midi',
+            capacite INT NOT NULL DEFAULT 14 COMMENT 'Capacité maximale (999 = illimité)',
+            actif TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Créneau actif (1) ou supprimé (0)',
+            created_by VARCHAR(50) DEFAULT NULL COMMENT 'Administrateur ayant créé le créneau',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_actif (actif),
+            INDEX idx_periode (periode)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        COMMENT='Configuration des créneaux horaires disponibles'
+    ");
+
+    // Insérer les créneaux par défaut s'ils n'existent pas
+    $pdo->exec("
+        INSERT IGNORE INTO creneaux_config (heure_creneau, periode, capacite) VALUES
+        ('09:00', 'matin', 14),
+        ('09:20', 'matin', 14),
+        ('09:40', 'matin', 14),
+        ('10:00', 'matin', 14),
+        ('10:20', 'matin', 14),
+        ('10:40', 'matin', 14),
+        ('11:00', 'matin', 14),
+        ('11:20', 'matin', 14),
+        ('11:40', 'matin', 14),
+        ('12:00', 'matin', 14),
+        ('12:20', 'matin', 14),
+        ('13:00', 'apres-midi', 14),
+        ('13:20', 'apres-midi', 14),
+        ('13:40', 'apres-midi', 14),
+        ('14:00', 'apres-midi', 14),
+        ('14:20', 'apres-midi', 14),
+        ('14:40', 'apres-midi', 14),
+        ('15:00', 'apres-midi', 999)
     ");
     
     // Ajouter les colonnes nom et prenom si elles n'existent pas déjà
@@ -333,6 +391,32 @@ try {
                     throw new Exception('Le nombre de proches doit être entre 0 et 4');
                 }
 
+                // Vérifier si le créneau est bloqué
+                $stmt = $pdo->prepare("
+                    SELECT bloque, raison
+                    FROM creneaux_bloques
+                    WHERE heure_creneau = ?
+                      AND bloque = 1
+                      AND (date_creneau IS NULL OR date_creneau = CURDATE())
+                ");
+                $stmt->execute([$input['heure_arrivee']]);
+                $creneauBloque = $stmt->fetch();
+
+                if ($creneauBloque) {
+                    $message = 'Le créneau ' . $input['heure_arrivee'] . ' est actuellement bloqué et n\'accepte pas de nouvelles inscriptions.';
+                    if ($creneauBloque['raison']) {
+                        $message .= ' Raison: ' . $creneauBloque['raison'];
+                    }
+                    http_response_code(403);
+                    echo json_encode([
+                        'error' => 'Créneau bloqué',
+                        'message' => $message,
+                        'error_type' => 'CRENEAU_BLOQUE',
+                        'raison' => $creneauBloque['raison']
+                    ]);
+                    return;
+                }
+
                 // Statut par défaut
                 $statut = $input['statut'] ?? 'inscrit';
                 $statutsValides = ['inscrit', 'present', 'absent', 'annule'];
@@ -347,7 +431,57 @@ try {
                     throw new Exception('Un agent avec ce code personnel est déjà inscrit');
                 }
 
-                // Vérifier si l'inscription est pour le créneau de 15h (réservé aux administrateurs)
+                // Vérifier si le créneau est réservé aux administrateurs
+                $stmt = $pdo->prepare("
+                    SELECT admin_only
+                    FROM creneaux_config
+                    WHERE heure_creneau = ? AND actif = 1
+                ");
+                $stmt->execute([$input['heure_arrivee']]);
+                $creneauConfig = $stmt->fetch();
+
+                if ($creneauConfig && $creneauConfig['admin_only']) {
+                    // Vérifier l'authentification admin
+                    $headers = getallheaders();
+                    $authHeader = $headers['Authorization'] ?? '';
+                    $isAdmin = false;
+
+                    if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                        $token = $matches[1];
+                        try {
+                            $payload = json_decode(base64_decode($token), true);
+                            if ($payload && isset($payload['exp']) && $payload['exp'] >= time()) {
+                                // Vérifier que l'utilisateur existe encore dans la base
+                                if (isset($payload['sub']) && isset($payload['username'])) {
+                                    $stmt = $pdo->prepare("SELECT role FROM admins WHERE id = ? AND username = ?");
+                                    $stmt->execute([$payload['sub'], $payload['username']]);
+                                    $admin = $stmt->fetch();
+
+                                    if ($admin) {
+                                        $isAdmin = true;
+                                        error_log("Admin validé pour créneau admin-only " . $input['heure_arrivee'] . ": " . $payload['username']);
+                                    }
+                                }
+                            }
+                        } catch (Exception $e) {
+                            error_log("Erreur décodage token admin: " . $e->getMessage());
+                        }
+                    }
+
+                    if (!$isAdmin) {
+                        error_log("Accès refusé au créneau admin-only " . $input['heure_arrivee'] . " - utilisateur non admin");
+                        http_response_code(403);
+                        echo json_encode([
+                            'error' => 'Créneau réservé aux bénévoles',
+                            'message' => 'Ce créneau est réservé aux bénévoles. Veuillez contacter un administrateur pour vous inscrire sur ce créneau.',
+                            'error_type' => 'CRENEAU_RESERVE',
+                            'contact_admin' => true
+                        ]);
+                        return;
+                    }
+                }
+
+                // Vérifier si l'inscription est pour le créneau de 15h (réservé aux administrateurs) - LEGACY CODE
                 if ($input['heure_arrivee'] === '15:00') {
                     // Vérifier l'authentification admin
                     $headers = getallheaders();
@@ -443,6 +577,28 @@ try {
 
                 $id = $pdo->lastInsertId();
 
+                // Recalculer les places restantes pour ce créneau après l'inscription
+                $stmt = $pdo->prepare("
+                    SELECT COALESCE(SUM(nombre_proches + 1), 0) as personnes_total
+                    FROM agents_inscriptions
+                    WHERE heure_arrivee = ? AND statut IN ('inscrit', 'present')
+                ");
+                $stmt->execute([$input['heure_arrivee']]);
+                $result = $stmt->fetch();
+                $personnesActuelles = $result['personnes_total'];
+
+                // Récupérer la capacité configurée pour ce créneau
+                $stmt = $pdo->prepare("
+                    SELECT capacite
+                    FROM creneaux_config
+                    WHERE heure_creneau = ? AND actif = 1
+                ");
+                $stmt->execute([$input['heure_arrivee']]);
+                $creneauConfig = $stmt->fetch();
+                $capacite = $creneauConfig ? (int)$creneauConfig['capacite'] : 14;
+
+                $placesRestantes = ($capacite === 999) ? 999 : max(0, $capacite - $personnesActuelles);
+
                 echo json_encode([
                     'success' => true,
                     'message' => 'Agent inscrit avec succès',
@@ -457,6 +613,12 @@ try {
                         'heure_validation' => null,
                         'heure_arrivee' => $input['heure_arrivee'],
                         'date_inscription' => date('Y-m-d H:i:s')
+                    ],
+                    'creneau_info' => [
+                        'heure' => $input['heure_arrivee'],
+                        'personnes_total' => $personnesActuelles,
+                        'places_restantes' => $placesRestantes,
+                        'capacite' => $capacite
                     ]
                 ]);
 
@@ -744,17 +906,52 @@ try {
 
         case 'creneaux':
             if ($method === 'GET') {
-                // Définir tous les créneaux possibles (9h à 14h40 toutes les 20 minutes)
-                $creneauxMatin = ['09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40', '12:00', '12:20'];
-                $creneauxApresMidi = ['13:00', '13:20', '13:40', '14:00', '14:20', '14:40', '15:00'];
+                // Récupérer les créneaux depuis la configuration
+                $stmtConfig = $pdo->query("
+                    SELECT TIME_FORMAT(heure_creneau, '%H:%i') as heure_creneau, periode, capacite, admin_only
+                    FROM creneaux_config
+                    WHERE actif = 1
+                    ORDER BY heure_creneau
+                ");
+
+                $creneauxMatin = [];
+                $creneauxApresMidi = [];
+                $capacites = [];
+                $adminOnly = [];
+
+                while ($row = $stmtConfig->fetch()) {
+                    $heure = $row['heure_creneau'];
+                    $capacites[$heure] = (int)$row['capacite'];
+                    $adminOnly[$heure] = (bool)$row['admin_only'];
+
+                    if ($row['periode'] === 'matin') {
+                        $creneauxMatin[] = $heure;
+                    } else {
+                        $creneauxApresMidi[] = $heure;
+                    }
+                }
+
+                // Récupérer les créneaux bloqués
+                $stmt = $pdo->query("
+                    SELECT TIME_FORMAT(heure_creneau, '%H:%i') as heure_creneau, bloque, raison
+                    FROM creneaux_bloques
+                    WHERE bloque = 1 AND (date_creneau IS NULL OR date_creneau = CURDATE())
+                ");
+                $creneauxBloques = [];
+                while ($row = $stmt->fetch()) {
+                    $creneauxBloques[$row['heure_creneau']] = [
+                        'bloque' => (bool)$row['bloque'],
+                        'raison' => $row['raison']
+                    ];
+                }
 
                 // Récupérer les statistiques (seulement les agents inscrits et présents comptent pour la capacité)
                 $stmt = $pdo->query("
-                    SELECT 
+                    SELECT
                         TIME_FORMAT(heure_arrivee, '%H:%i') as heure_creneau,
                         COUNT(*) as agents_inscrits,
                         SUM(nombre_proches + 1) as personnes_total
-                    FROM agents_inscriptions 
+                    FROM agents_inscriptions
                     WHERE statut IN ('inscrit', 'present')
                     GROUP BY heure_arrivee
                     ORDER BY heure_arrivee
@@ -777,34 +974,44 @@ try {
                 foreach ($creneauxMatin as $heure) {
                     $personnesTotal = isset($stats[$heure]) ? $stats[$heure]['personnes_total'] : 0;
                     $agentsInscrits = isset($stats[$heure]) ? $stats[$heure]['agents_inscrits'] : 0;
-                    $placesRestantes = max(0, 14 - $personnesTotal);
+                    $capacite = isset($capacites[$heure]) ? $capacites[$heure] : 14;
+                    $placesRestantes = ($capacite === 999) ? 999 : max(0, $capacite - $personnesTotal);
+                    $isBloque = isset($creneauxBloques[$heure]);
 
                     $response['matin'][$heure] = [
                         'agents_inscrits' => $agentsInscrits,
                         'personnes_total' => $personnesTotal,
                         'places_restantes' => $placesRestantes,
-                        'complet' => $personnesTotal >= 14
+                        'complet' => ($capacite !== 999 && $personnesTotal >= $capacite),
+                        'bloque' => $isBloque,
+                        'raison_blocage' => $isBloque ? $creneauxBloques[$heure]['raison'] : null,
+                        'admin_only' => isset($adminOnly[$heure]) ? $adminOnly[$heure] : false
                     ];
                 }
 
                 foreach ($creneauxApresMidi as $heure) {
                     $personnesTotal = isset($stats[$heure]) ? $stats[$heure]['personnes_total'] : 0;
                     $agentsInscrits = isset($stats[$heure]) ? $stats[$heure]['agents_inscrits'] : 0;
+                    $isBloque = isset($creneauxBloques[$heure]);
+                    $capacite = isset($capacites[$heure]) ? $capacites[$heure] : 14;
 
-                    // Pas de limite pour le créneau de 15h00
-                    if ($heure === '15:00') {
+                    // Utiliser la capacité configurée
+                    if ($capacite === 999) {
                         $placesRestantes = 999; // Nombre illimité
                         $complet = false;
                     } else {
-                        $placesRestantes = max(0, 14 - $personnesTotal);
-                        $complet = $personnesTotal >= 14;
+                        $placesRestantes = max(0, $capacite - $personnesTotal);
+                        $complet = $personnesTotal >= $capacite;
                     }
 
                     $response['apres-midi'][$heure] = [
                         'agents_inscrits' => $agentsInscrits,
                         'personnes_total' => $personnesTotal,
                         'places_restantes' => $placesRestantes,
-                        'complet' => $complet
+                        'complet' => $complet,
+                        'bloque' => $isBloque,
+                        'raison_blocage' => $isBloque ? $creneauxBloques[$heure]['raison'] : null,
+                        'admin_only' => isset($adminOnly[$heure]) ? $adminOnly[$heure] : false
                     ];
                 }
 
@@ -1561,25 +1768,366 @@ try {
             if ($method === 'GET') {
                 // Lister les agents de la whitelist avec nom et prénom
                 $stmt = $pdo->query("
-                    SELECT 
+                    SELECT
                         code_personnel,
                         nom,
                         prenom,
                         actif,
                         created_at,
                         updated_at
-                    FROM agents_whitelist 
+                    FROM agents_whitelist
                     ORDER BY code_personnel
                 ");
-                
+
                 $whitelist = $stmt->fetchAll();
-                
+
                 echo json_encode([
                     'success' => true,
                     'whitelist' => $whitelist
                 ]);
             } else {
                 throw new Exception('Méthode non autorisée pour /whitelist/list');
+            }
+            break;
+
+        case 'creneaux/bloquer':
+            // Vérifier l'authentification
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? '';
+
+            if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token d\'authentification requis']);
+                return;
+            }
+
+            $token = $matches[1];
+            try {
+                $payload = json_decode(base64_decode($token), true);
+                if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                    throw new Exception('Token expiré');
+                }
+            } catch (Exception $e) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token invalide']);
+                return;
+            }
+
+            if ($method === 'POST') {
+                // Bloquer un créneau
+                $input = json_decode(file_get_contents('php://input'), true);
+
+                if (!$input || !isset($input['heure_creneau'])) {
+                    throw new Exception('Heure du créneau requise');
+                }
+
+                $heureCreneau = $input['heure_creneau'];
+                $dateCreneau = $input['date_creneau'] ?? null;
+                $raison = $input['raison'] ?? null;
+                $createdBy = $payload['username'] ?? 'admin';
+
+                // Vérifier si le créneau existe déjà
+                $stmt = $pdo->prepare("
+                    SELECT id FROM creneaux_bloques
+                    WHERE heure_creneau = ? AND (date_creneau IS NULL OR date_creneau = ?)
+                ");
+                $stmt->execute([$heureCreneau, $dateCreneau]);
+                $existing = $stmt->fetch();
+
+                if ($existing) {
+                    // Mettre à jour
+                    $stmt = $pdo->prepare("
+                        UPDATE creneaux_bloques
+                        SET bloque = 1, raison = ?, created_by = ?, updated_at = NOW()
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$raison, $createdBy, $existing['id']]);
+                } else {
+                    // Insérer
+                    $stmt = $pdo->prepare("
+                        INSERT INTO creneaux_bloques
+                        (heure_creneau, date_creneau, bloque, raison, created_by)
+                        VALUES (?, ?, 1, ?, ?)
+                    ");
+                    $stmt->execute([$heureCreneau, $dateCreneau, $raison, $createdBy]);
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Créneau $heureCreneau bloqué avec succès",
+                    'heure_creneau' => $heureCreneau,
+                    'raison' => $raison
+                ]);
+
+            } elseif ($method === 'DELETE') {
+                // Débloquer un créneau
+                $heureCreneau = $_GET['heure'] ?? '';
+                $dateCreneau = $_GET['date'] ?? null;
+
+                if (empty($heureCreneau)) {
+                    throw new Exception('Heure du créneau manquante');
+                }
+
+                // Soit supprimer, soit mettre bloque à 0
+                $stmt = $pdo->prepare("
+                    UPDATE creneaux_bloques
+                    SET bloque = 0, updated_at = NOW()
+                    WHERE heure_creneau = ? AND (date_creneau IS NULL OR date_creneau = ?)
+                ");
+                $stmt->execute([$heureCreneau, $dateCreneau]);
+
+                if ($stmt->rowCount() > 0) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => "Créneau $heureCreneau débloqué avec succès",
+                        'heure_creneau' => $heureCreneau
+                    ]);
+                } else {
+                    http_response_code(404);
+                    echo json_encode([
+                        'error' => 'Créneau bloqué non trouvé',
+                        'heure_creneau' => $heureCreneau
+                    ]);
+                }
+
+            } elseif ($method === 'GET') {
+                // Lister tous les créneaux bloqués
+                $stmt = $pdo->query("
+                    SELECT
+                        id,
+                        heure_creneau,
+                        date_creneau,
+                        bloque,
+                        raison,
+                        created_by,
+                        created_at,
+                        updated_at
+                    FROM creneaux_bloques
+                    WHERE bloque = 1
+                    ORDER BY heure_creneau
+                ");
+
+                $creneauxBloques = $stmt->fetchAll();
+
+                echo json_encode([
+                    'success' => true,
+                    'creneaux_bloques' => $creneauxBloques
+                ]);
+
+            } else {
+                throw new Exception('Méthode non autorisée pour /creneaux/bloquer');
+            }
+            break;
+
+        case 'creneaux/config':
+            // Vérifier l'authentification
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? '';
+
+            if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token d\'authentification requis']);
+                return;
+            }
+
+            $token = $matches[1];
+            try {
+                $payload = json_decode(base64_decode($token), true);
+                if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                    throw new Exception('Token expiré');
+                }
+            } catch (Exception $e) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Token invalide']);
+                return;
+            }
+
+            if ($method === 'POST') {
+                // Ajouter un nouveau créneau
+                $input = json_decode(file_get_contents('php://input'), true);
+
+                if (!$input || !isset($input['heure_creneau']) || !isset($input['periode'])) {
+                    throw new Exception('Heure du créneau et période requis');
+                }
+
+                $heureCreneau = $input['heure_creneau'];
+                $periode = $input['periode'];
+                $capacite = $input['capacite'] ?? 14;
+                $createdBy = $payload['username'] ?? 'admin';
+
+                // Valider la période
+                if (!in_array($periode, ['matin', 'apres-midi'])) {
+                    throw new Exception('Période invalide. Doit être "matin" ou "apres-midi"');
+                }
+
+                // Vérifier si le créneau existe déjà
+                $stmt = $pdo->prepare("
+                    SELECT id, actif FROM creneaux_config
+                    WHERE heure_creneau = ?
+                ");
+                $stmt->execute([$heureCreneau]);
+                $existing = $stmt->fetch();
+
+                if ($existing) {
+                    if ($existing['actif'] == 1) {
+                        throw new Exception('Ce créneau existe déjà');
+                    }
+                    // Réactiver le créneau
+                    $stmt = $pdo->prepare("
+                        UPDATE creneaux_config
+                        SET actif = 1, periode = ?, capacite = ?, created_by = ?, updated_at = NOW()
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$periode, $capacite, $createdBy, $existing['id']]);
+                } else {
+                    // Insérer le nouveau créneau
+                    $stmt = $pdo->prepare("
+                        INSERT INTO creneaux_config
+                        (heure_creneau, periode, capacite, created_by)
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$heureCreneau, $periode, $capacite, $createdBy]);
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Créneau $heureCreneau ajouté avec succès",
+                    'heure_creneau' => $heureCreneau,
+                    'periode' => $periode,
+                    'capacite' => $capacite
+                ]);
+
+            } elseif ($method === 'PUT') {
+                // Modifier un créneau (capacité, admin_only, etc.)
+                $input = json_decode(file_get_contents('php://input'), true);
+                $heureCreneau = $_GET['heure'] ?? '';
+
+                if (empty($heureCreneau)) {
+                    throw new Exception('Heure du créneau manquante');
+                }
+
+                if (!$input) {
+                    throw new Exception('Données JSON invalides');
+                }
+
+                // Vérifier que le créneau existe
+                $stmt = $pdo->prepare("SELECT id FROM creneaux_config WHERE heure_creneau = ?");
+                $stmt->execute([$heureCreneau]);
+                $creneau = $stmt->fetch();
+
+                if (!$creneau) {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Créneau non trouvé']);
+                    return;
+                }
+
+                // Préparer les champs à modifier
+                $updates = [];
+                $params = [];
+
+                if (isset($input['admin_only'])) {
+                    $updates[] = "admin_only = ?";
+                    $params[] = $input['admin_only'] ? 1 : 0;
+                }
+
+                if (isset($input['capacite'])) {
+                    $updates[] = "capacite = ?";
+                    $params[] = (int)$input['capacite'];
+                }
+
+                if (isset($input['periode'])) {
+                    if (!in_array($input['periode'], ['matin', 'apres-midi'])) {
+                        throw new Exception('Période invalide');
+                    }
+                    $updates[] = "periode = ?";
+                    $params[] = $input['periode'];
+                }
+
+                if (empty($updates)) {
+                    throw new Exception('Aucune modification spécifiée');
+                }
+
+                // Ajouter la mise à jour du timestamp
+                $updates[] = "updated_at = NOW()";
+                $params[] = $heureCreneau;
+
+                // Exécuter la mise à jour
+                $sql = "UPDATE creneaux_config SET " . implode(', ', $updates) . " WHERE heure_creneau = ?";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Créneau $heureCreneau mis à jour avec succès"
+                ]);
+
+            } elseif ($method === 'DELETE') {
+                // Supprimer un créneau (soft delete)
+                $heureCreneau = $_GET['heure'] ?? '';
+
+                if (empty($heureCreneau)) {
+                    throw new Exception('Heure du créneau manquante');
+                }
+
+                // Vérifier que le créneau n'a pas d'inscriptions
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) as count FROM agents
+                    WHERE heure_creneau = ?
+                ");
+                $stmt->execute([$heureCreneau]);
+                $result = $stmt->fetch();
+
+                if ($result['count'] > 0) {
+                    throw new Exception('Impossible de supprimer ce créneau car des agents y sont inscrits');
+                }
+
+                // Soft delete
+                $stmt = $pdo->prepare("
+                    UPDATE creneaux_config
+                    SET actif = 0, updated_at = NOW()
+                    WHERE heure_creneau = ?
+                ");
+                $stmt->execute([$heureCreneau]);
+
+                if ($stmt->rowCount() > 0) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => "Créneau $heureCreneau supprimé avec succès",
+                        'heure_creneau' => $heureCreneau
+                    ]);
+                } else {
+                    http_response_code(404);
+                    echo json_encode([
+                        'error' => 'Créneau non trouvé',
+                        'heure_creneau' => $heureCreneau
+                    ]);
+                }
+
+            } elseif ($method === 'GET') {
+                // Lister tous les créneaux (y compris inactifs pour admin)
+                $stmt = $pdo->query("
+                    SELECT
+                        id,
+                        heure_creneau,
+                        periode,
+                        capacite,
+                        actif,
+                        created_by,
+                        created_at,
+                        updated_at
+                    FROM creneaux_config
+                    ORDER BY heure_creneau
+                ");
+
+                $creneauxConfig = $stmt->fetchAll();
+
+                echo json_encode([
+                    'success' => true,
+                    'creneaux_config' => $creneauxConfig
+                ]);
+
+            } else {
+                throw new Exception('Méthode non autorisée pour /creneaux/config');
             }
             break;
 
