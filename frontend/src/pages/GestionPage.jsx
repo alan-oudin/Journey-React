@@ -391,15 +391,19 @@ export default function GestionPage() {
                         </thead>
                         <tbody>
                           {creneauxMatin.map(heure => {
-                            const info = creneaux.matin[heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
+                            const info = creneaux.matin[heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false, bloque: false };
+                            const isBloque = info.bloque || false;
                             return (
-                              <tr key={heure} style={{background: info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
-                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>{heure}</td>
+                              <tr key={heure} style={{background: isBloque ? '#ffebee' : info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
+                                <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>
+                                  {heure}
+                                  {isBloque && <span style={{color: '#dc3545', fontSize: '0.75em', marginLeft: '4px'}}>🚫</span>}
+                                </td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.agents_inscrits}</td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.personnes_total}</td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.places_restantes}</td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.85em'}}>
-                                  {info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
+                                  {isBloque ? <span style={{color: '#dc3545', fontWeight: 'bold'}}>BLOQUÉ</span> : info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
                                 </td>
                               </tr>
                             );
@@ -431,13 +435,15 @@ export default function GestionPage() {
                         </thead>
                         <tbody>
                           {creneauxApresMidi.map(heure => {
-                            const info = creneaux['apres-midi'][heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false };
-                            const isCreneauReserve = heure === '15:00';
+                            const info = creneaux['apres-midi'][heure] || { agents_inscrits: 0, personnes_total: 0, places_restantes: 14, complet: false, bloque: false };
+                            const isCreneauReserve = info.admin_only || heure === '15:00';
+                            const isBloque = info.bloque || false;
                             return (
-                              <tr key={heure} style={{background: isCreneauReserve ? '#fff3e0' : info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
+                              <tr key={heure} style={{background: isBloque ? '#ffebee' : isCreneauReserve ? '#fff3e0' : info.complet ? '#ffeaea' : info.places_restantes <= 3 ? '#fffbe6' : 'white'}}>
                                 <td style={{padding: '6px 8px', textAlign: 'left', fontSize: '0.95em', whiteSpace: 'nowrap'}}>
                                   {heure}
-                                  {isCreneauReserve && <span style={{color: '#ff6b00', fontSize: '0.75em', marginLeft: '4px'}}>🔒</span>}
+                                  {isBloque && <span style={{color: '#dc3545', fontSize: '0.75em', marginLeft: '4px'}}>🚫</span>}
+                                  {!isBloque && isCreneauReserve && <span style={{color: '#ff6b00', fontSize: '0.75em', marginLeft: '4px'}}>🔒</span>}
                                 </td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.agents_inscrits}</td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.95em'}}>{info.personnes_total}</td>
@@ -445,7 +451,7 @@ export default function GestionPage() {
                                   {isCreneauReserve ? 'Illimité' : info.places_restantes}
                                 </td>
                                 <td style={{padding: '6px 4px', textAlign: 'center', fontSize: '0.85em'}}>
-                                  {isCreneauReserve ? <span style={{color: '#ff6b00'}}>RÉSERVÉ</span> : info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
+                                  {isBloque ? <span style={{color: '#dc3545', fontWeight: 'bold'}}>BLOQUÉ</span> : isCreneauReserve ? <span style={{color: '#ff6b00'}}>RÉSERVÉ</span> : info.complet ? <span style={{color: 'red'}}>COMPLET</span> : info.places_restantes <= 3 ? <span style={{color: 'orange'}}>⚡ Limité</span> : <span style={{color: 'green'}}>LIBRE</span>}
                                 </td>
                               </tr>
                             );
