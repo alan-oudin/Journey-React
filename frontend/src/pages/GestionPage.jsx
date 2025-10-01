@@ -3,6 +3,7 @@ import StatCard from '../components/StatCard';
 import { apiGet, apiPut, apiDelete } from '../api';
 import { ENV_CONFIG } from '../config/environment';
 import { EVENT_CONFIG } from '../constants/event';
+import { downloadReservationPDF } from '../utils/pdfGenerator';
 
 const STATUTS = [
   { value: 'tous', label: 'Tous' },
@@ -530,13 +531,32 @@ export default function GestionPage() {
                       {STATUTS.find(s => s.value === agent.statut)?.label || agent.statut}
                     </span>
                   </div>
-                  <wcs-button
-                      size="s"
-                      shape="outline"
-                      onClick={() => setModalAgent(agent)}
-                  >
-                    Détails
-                  </wcs-button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <wcs-button
+                        size="s"
+                        shape="outline"
+                        onClick={() => setModalAgent(agent)}
+                    >
+                      📋 Détails
+                    </wcs-button>
+                    <wcs-button
+                        size="s"
+                        color="secondary"
+                        shape="outline"
+                        onClick={() => {
+                          downloadReservationPDF({
+                            codePersonnel: agent.code_personnel,
+                            nom: agent.nom,
+                            prenom: agent.prenom,
+                            nombreProches: agent.nombre_proches,
+                            heureArrivee: agent.heure_arrivee,
+                            restaurationSurPlace: agent.restauration_sur_place === 1
+                          });
+                        }}
+                    >
+                      📄 PDF
+                    </wcs-button>
+                  </div>
                 </div>
 
               </wcs-card>
@@ -758,40 +778,59 @@ export default function GestionPage() {
                 )}
               </div>
             </div>
-            
-            <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: 16 }}>
-              <button 
-                onClick={() => setModalAgent(null)}
-                style={{
-                  padding: '8px 16px',
-                  border: '1px solid #6c757d',
-                  backgroundColor: 'white',
-                  color: '#6c757d',
-                  borderRadius: 4,
-                  cursor: 'pointer'
-                }}
-              >
-                Fermer
-              </button>
-              <button 
+
+            <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'space-between', borderTop: '1px solid #eee', paddingTop: 16 }}>
+              <wcs-button
+                color="secondary"
+                size="m"
                 onClick={() => {
-                  const codePersonnel = modalAgent.code_personnel;
-                  setModalAgent(null);
-                  handleSupprimer(codePersonnel);
-                }}
-                disabled={loading}
-                style={{
-                  padding: '8px 16px',
-                  border: '1px solid #dc3545',
-                  backgroundColor: 'white',
-                  color: '#dc3545',
-                  borderRadius: 4,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.6 : 1
+                  downloadReservationPDF({
+                    codePersonnel: modalAgent.code_personnel,
+                    nom: modalAgent.nom,
+                    prenom: modalAgent.prenom,
+                    nombreProches: modalAgent.nombre_proches,
+                    heureArrivee: modalAgent.heure_arrivee,
+                    restaurationSurPlace: modalAgent.restauration_sur_place === 1
+                  });
                 }}
               >
-                🗑️ Supprimer
-              </button>
+                📄 Télécharger le PDF
+              </wcs-button>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={() => setModalAgent(null)}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #6c757d',
+                    backgroundColor: 'white',
+                    color: '#6c757d',
+                    borderRadius: 4,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Fermer
+                </button>
+                <button
+                  onClick={() => {
+                    const codePersonnel = modalAgent.code_personnel;
+                    setModalAgent(null);
+                    handleSupprimer(codePersonnel);
+                  }}
+                  disabled={loading}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #dc3545',
+                    backgroundColor: 'white',
+                    color: '#dc3545',
+                    borderRadius: 4,
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    opacity: loading ? 0.6 : 1
+                  }}
+                >
+                  🗑️ Supprimer
+                </button>
+              </div>
             </div>
           </div>
         </div>
